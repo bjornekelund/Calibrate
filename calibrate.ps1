@@ -14,8 +14,8 @@ $inifilepath1 = $inipath1 + $inifile1
 $inifilepath2 = $inipath2 + $inifile2
 $inifilepath3 = $inipath3 + $inifile3
 
+Write-Host "--------------------------------------------------"
 Write-Host "Now is" (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
-# Output: 2025-06-08 10:30:45
 
 try {
     # Parse the web page for a adjustment factor and ini file
@@ -131,7 +131,6 @@ try {
     Start-Process -WorkingDirectory "C:\CWSL_DIGI" -FilePath "CWSL_DIGI.exe" -WindowStyle Minimized
 
     Write-Host "Update complete. Applications restarted."
-    Write-Host "--------------------------------------------------"
 }
 catch {
     Write-Error "An error occurred: $($_.Exception.Message)"
