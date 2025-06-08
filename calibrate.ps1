@@ -18,7 +18,7 @@ Write-Host "--------------------------------------------------"
 Write-Host "Now is" (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
 
 try {
-    # Parse the web page for a adjustment factor and ini file
+    # Parse the web page for an adjustment factor and ini file
     # for current calibration factor.
     
     # Format of line 
@@ -65,7 +65,7 @@ try {
     # Stop SkimSrv instances
     Stop-Process -Name "SkimSrv*" -Force -ErrorAction SilentlyContinue 
     
-    # Close CWSL_DIGI processe including subprocesses
+    # Close CWSL_DIGI process including subprocesses
     Stop-Process -Name "CWSL*" -Force -ErrorAction SilentlyContinue
     Stop-Process -Name "jt9*" -Force -ErrorAction SilentlyContinue
 
