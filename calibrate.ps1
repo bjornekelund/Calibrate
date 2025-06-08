@@ -103,7 +103,7 @@ try {
 #        Write-Host "Updating file: $inifile3"
         $fileContent3 = Get-Content $inifilepath3 -Raw
 
-        # Replace calibration factor in text file
+        # Replace calibration factor in config file
         # freqcalibration=1.000000000
         $replacementPattern3 = '(freqcalibration=)\d\.\d+'
         $newContent3 = $fileContent3 -replace $replacementPattern3, "`${1}$cwsldigicalibration"
