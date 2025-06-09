@@ -1,7 +1,7 @@
 # PowerShell script to parse web page, calculate, and update text file
 
 # Configuration
-$webUrl = "https://sm7iun.se/rbn/analytics/"
+$webUrl = "https://sm7iun.se/rbn/analytics"
 $inipath1 = $env:APPDATA + "\Afreet\Products\SkimSrv\"
 $inipath2 = $env:APPDATA + "\Afreet\Products\SkimSrv2\"
 $inipath3 = "C:\CWSL_DIGI\"
@@ -13,6 +13,10 @@ $inifile3 = "config.ini"
 $inifilepath1 = $inipath1 + $inifile1
 $inifilepath2 = $inipath2 + $inifile2
 $inifilepath3 = $inipath3 + $inifile3
+
+Write-Host "inifilepath1: $inifilepath1"
+Write-Host "inifilepath2: $inifilepath2"
+Write-Host "inifilepath3: $inifilepath3"
 
 Write-Host "--------------------------------------------------"
 Write-Host "Now is" (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
@@ -32,8 +36,8 @@ try {
     Write-Host "Fetching data from: $webUrl"
     $webContent = Invoke-WebRequest -Uri $webUrl -UseBasicParsing
 	$callsign = "SM7IUN"
-    $webmatch = [regex]::Match($webContent.Content, $callsign + ' +[+-]\d\.\d+ +\d+ +(\d\.\d+)')
-    
+    $webmatch = [regex]::Match($webContent.Content, $callsign + '\*? +[+-]\d\.\d+ +\d+ +(\d\.\d+)')
+
 	Write-Host ""
 	
     if ($webMatch.Success -and $inimatch.Success) 
@@ -57,6 +61,7 @@ try {
     else 
     {
         Write-Error "Failed to read web and/or current calibration factor from ini file."
+        exit 1
     }
 
     # Stop the applications
@@ -96,6 +101,7 @@ try {
     else 
     {
         Write-Error "Ini file not found: $inifilepath1"
+        exit 1
     }
 
     if (Test-Path $inifilepath3) {
@@ -117,6 +123,7 @@ try {
     else 
     {
         Write-Error "Ini file not found: $inifilepath3"
+        exit 1
     }
     
     # Start applications again
@@ -134,4 +141,5 @@ try {
 }
 catch {
     Write-Error "An error occurred: $($_.Exception.Message)"
+    exit 1
 }
