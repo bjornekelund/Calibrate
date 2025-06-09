@@ -1,6 +1,11 @@
 # PowerShell script to parse web page, calculate, and update text file
 
+$dryrun = $false # Set to $false to actually update the files
+
 # Configuration
+
+$ProgressPreference = 'SilentlyContinue' # Show no progress bar
+
 $webUrl = "https://sm7iun.se/rbn/analytics"
 $inipath1 = $env:APPDATA + "\Afreet\Products\SkimSrv\"
 $inipath2 = $env:APPDATA + "\Afreet\Products\SkimSrv2\"
@@ -14,58 +19,63 @@ $inifilepath1 = $inipath1 + $inifile1
 $inifilepath2 = $inipath2 + $inifile2
 $inifilepath3 = $inipath3 + $inifile3
 
-Write-Host "inifilepath1: $inifilepath1"
-Write-Host "inifilepath2: $inifilepath2"
-Write-Host "inifilepath3: $inifilepath3"
+$exepath1 = "C:\Program Files (x86)\Afreet\SkimSrv"
+$exepath2 = "C:\Program Files (x86)\Afreet\SkimSrv2"
+$exepath3 = "C:\CWSL_DIGI"
+
+$exefile1 = "SkimSrv.exe"
+$exefile2 = "SkimSrv2.exe"
+$exefile3 = "CWSL_DIGI.exe"
 
 Write-Host "--------------------------------------------------"
-Write-Host "Now is" (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+Write-Host "Execution time is" (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
 
 try {
-    # Parse the web page for an adjustment factor and ini file
-    # for current calibration factor.
-    
+    # Parse SkimSrv ini file for current calibration factor
+    # Both ini files should have the same calibration factor
     # Format of line 
     # FreqCalibration=1.00828283
-    Write-Host "Fetching data from: $inifilepath1"
 	$inicontent = Get-Content $inifilepath1 -Raw
 	$inimatch = [regex]::Match($inicontent, 'FreqCalibration=(\d+\.\d+)?') 
 
+    if ($inimatch.Success) 
+    {
+		$inicalibration = [double]$inimatch.Groups[1].Value
+		Write-Host "Current SkimSrv calibration factor is: $inicalibration"
+    }
+    else 
+    {
+        Write-Error "Failed to read calibration factor from $inifile1"
+        exit 1
+    }
+
+    # Parse web page for adjustment factor
+    # The web page should contain a line with the callsign and adjustment factor
     # Format of line
-    #   SM7IUN      +0.1   3999   1.000000099
-    Write-Host "Fetching data from: $webUrl"
+    #   SM7IUN*     +0.1   3999   1.000000099
     $webContent = Invoke-WebRequest -Uri $webUrl -UseBasicParsing
 	$callsign = "SM7IUN"
     $webmatch = [regex]::Match($webContent.Content, $callsign + '\*? +[+-]\d\.\d+ +\d+ +(\d\.\d+)')
 
-	Write-Host ""
-	
-    if ($webMatch.Success -and $inimatch.Success) 
+    if ($webMatch.Success) 
     {
-		$inicalibration = [double]$inimatch.Groups[1].Value
-		Write-Host "Current calibration factor: $inicalibration"
-
         $newCalibration = [double]$webmatch.Groups[1].Value
-        Write-Host "Adjustment factor: $newCalibration"
-
-		Write-Host ""
-
-        # Calculate new calibration factors
-        $skimsrvcalibration = $newCalibration * $inicalibration
-        Write-Host "New calibration factor for SkimSrv: $skimsrvcalibration"
-		$cwsldigicalibration = 1 / $skimsrvcalibration
-        Write-Host "New calibration factor for CWSL_DIGI: $cwsldigicalibration"
-        
-		Write-Host ""
+        Write-Host "Adjustment factor from $webUrl is: $newCalibration"
     }
     else 
     {
-        Write-Error "Failed to read web and/or current calibration factor from ini file."
+        Write-Error "Failed to find adjustment factor in $webUrl"
         exit 1
     }
 
+    # Calculate new calibration factors
+    $skimsrvcalibration = [Math]::Round($newCalibration * $inicalibration, 9)
+    Write-Host "New calibration factor for SkimSrv: $skimsrvcalibration"
+    $cwsldigicalibration = [Math]::Round(1.0 / ($newCalibration * $inicalibration), 9)
+    Write-Host "New calibration factor for CWSL_DIGI: $cwsldigicalibration"
+    
     # Stop the applications
-    Write-Host "Stopping SkimSrv, SkimSrv2, and CWSL_DIGI"
+    Write-Host "Stopping $exefile1, $exefile2, and $exefile3..."
 
     # Stop SkimSrv instances
     Stop-Process -Name "SkimSrv*" -Force -ErrorAction SilentlyContinue 
@@ -75,12 +85,12 @@ try {
     Stop-Process -Name "jt9*" -Force -ErrorAction SilentlyContinue
 
     # Wait a moment for cleanup
-    Start-Sleep -Seconds 5
+    Write-Host "Wait for OS process clean up..."
+    Start-Sleep -Seconds 2
 
     if ($(Test-Path $inifilepath1) -and (Test-Path $inifilepath2)) 
     {
         # Read the ini files
-#        Write-Host "Updating files: $inifile1 and $inifile2"
         $fileContent1 = Get-Content $inifilepath1 -Raw
         $fileContent2 = Get-Content $inifilepath2 -Raw
         
@@ -89,14 +99,16 @@ try {
         $replacementPattern = '(FreqCalibration=)\d\.\d+'
         $newContent1 = $fileContent1 -replace $replacementPattern, "`${1}$skimsrvcalibration"
         $newContent2 = $fileContent2 -replace $replacementPattern, "`${1}$skimsrvcalibration"
-
-        # Write back to files
-        $newContent1 | Set-Content $inifilepath1
-        $newContent2 | Set-Content $inifilepath2
+        if (-not $dryrun) {
+            $newContent1 | Set-Content $inifilepath1
+            $newContent2 | Set-Content $inifilepath2
+        } else {
+            Write-Host "*** Dry run mode is on, not updating SkimSrv ini files."
+        }
 
         # Announce success
-        Write-Host "Successfully updated SkimSrv1 ini with new calibration value: $skimsrvcalibration"
-        Write-Host "Successfully updated SkimSrv2 ini with new calibration value: $skimsrvcalibration"
+        Write-Host "Successfully updated $inifile1 ini with new calibration value: $skimsrvcalibration"
+        Write-Host "Successfully updated $inifile2 ini with new calibration value: $skimsrvcalibration"
     }
     else 
     {
@@ -105,20 +117,21 @@ try {
     }
 
     if (Test-Path $inifilepath3) {
-        # Read the config file
-#        Write-Host "Updating file: $inifile3"
+        # Read the CWSL_DIGI config file
         $fileContent3 = Get-Content $inifilepath3 -Raw
 
         # Replace calibration factor in config file
         # freqcalibration=1.000000000
         $replacementPattern3 = '(freqcalibration=)\d\.\d+'
         $newContent3 = $fileContent3 -replace $replacementPattern3, "`${1}$cwsldigicalibration"
-
-        # Write back to files
-        $newContent3 | Set-Content $inifilepath3
+        if (-not $dryrun) {
+            $newContent3 | Set-Content $inifilepath3
+        } else {
+            Write-Host "*** Dry run mode is on, not updating CWSL_DIGI config file."
+        }
 
         # Announce success
-        Write-Host "Successfully updated CWSL_DIGI ini with new calibration value: $cwsldigicalibration"
+        Write-Host "Successfully updated $inifile3 with new calibration value: $cwsldigicalibration"
     }
     else 
     {
@@ -127,15 +140,15 @@ try {
     }
     
     # Start applications again
-    Write-Host "Starting SkimSrv..."
-    Start-Process -WorkingDirectory "C:\Program Files (x86)\Afreet\SkimSrv" -FilePath "SkimSrv.exe" -WindowStyle Minimized
+    Write-Host "Starting $exefile1..."
+    Start-Process -WorkingDirectory $exepath1 -FilePath $exefile1 -WindowStyle Minimized
     Start-Sleep -Seconds 2
 
-    Write-Host "Starting SkimSrv2..."
-    Start-Process -WorkingDirectory "C:\Program Files (x86)\Afreet\SkimSrv2" -FilePath "SkimSrv2.exe" -WindowStyle Minimized
+    Write-Host "Starting $exefile2..."
+    Start-Process -WorkingDirectory $exepath2 -FilePath $exefile2 -WindowStyle Minimized
 
     Write-Host "Starting CWSL_DIGI..."
-    Start-Process -WorkingDirectory "C:\CWSL_DIGI" -FilePath "CWSL_DIGI.exe" -WindowStyle Minimized
+    Start-Process -WorkingDirectory $exepath3 -FilePath $exefile3 -WindowStyle Minimized
 
     Write-Host "Update complete. Applications restarted."
 }
