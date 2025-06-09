@@ -68,21 +68,25 @@ try {
     }
 
     # Parse web page for adjustment factor
-    # The web page should contain a line with the callsign and adjustment factor
+    # The web page should contain a line with the desired callsign and statistics/analytics
     # Callsign has optional asterisk, followed by frequency error in ppm, spot count, and adjustment factor
     # Format of line
     #   SM7IUN*     +0.1   3999   1.000000099
+    # Last updated 2025-06-09 00:16:23 UTC
     $webContent = Invoke-WebRequest -Uri $webUrl -UseBasicParsing
     $webmatch = [regex]::Match($webContent.Content, $callsign + '\*? +[+-]\d\.\d+ +\d+ +([01]\.\d+)')
+    $webtimematch = [regex]::Match($webContent.Content, 'Last updated +(20\d{2}-\d{1,2}-\d{1,2} +\d{1,2}:\d{2}:\d{2})')
 
-    if ($webMatch.Success) 
+    if ($webMatch.Success -and $webtimematch.Success) 
     {
+        $lastUpdated = $webtimematch.Groups[1].Value
         $newCalibration = [double]$webmatch.Groups[1].Value
-        Write-Host "Adjustment factor from $webUrl is: $newCalibration"
+        Write-Host "Adjustment factor from $webUrl at $lastUpdated from is: $newCalibration"
     }
     else 
     {
-        Write-Error "Failed to find adjustment factor in $webUrl"
+        Write-Error "Failed to find adjustment factor and/or update time in $webUrl"
+        Write-Error "Check if skimmer is down"
         exit 1
     }
 
