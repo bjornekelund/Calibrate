@@ -3,9 +3,9 @@
 
 $dryRun = $false  # Set to $false to actually update the files
 
-$ProgressPreference = 'SilentlyContinue' # Show no progress bar
+$callsign = "SM7IUN"  # Callsign to look for in the web page
 
-$callsign = "SM7IUN"
+# Configuration
 
 $webUrl = "https://sm7iun.se/rbn/analytics"
 $iniPath1 = $env:APPDATA + "\Afreet\Products\SkimSrv\"
@@ -27,6 +27,8 @@ $cwslPath = "C:\CWSL_DIGI"
 $skimsrvExe1 = "SkimSrv.exe"
 $skimsrvExe2 = "SkimSrv2.exe"
 $cwslExe = "CWSL_DIGI.exe"
+
+$ProgressPreference = 'SilentlyContinue' # Show no progress bar
 
 Write-Host "--------------------------------------------------"
 Write-Host "Execution time is" (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
@@ -77,7 +79,13 @@ try {
     $webMatch = [regex]::Match($webContent.Content, $callsign + '\*? +[+-]\d\.\d+ +\d+ +([01]\.\d+)')
     $webTimeMatch = [regex]::Match($webContent.Content, 'Last updated +(20\d{2}-\d{1,2}-\d{1,2} +\d{1,2}:\d{2}:\d{2})')
 
-    if ($webMatch.Success -and $webTimeMatch.Success) 
+    if (-not $webMatch.Success) 
+    {
+        Write-Host "No spots reported for $callsign. Skimmer may be down. Exiting."
+        exit 0
+    }
+
+    if ($webTimeMatch.Success) 
     {
         $lastUpdated = $webTimeMatch.Groups[1].Value
         $newCalibration = [double]$webMatch.Groups[1].Value
@@ -85,8 +93,7 @@ try {
     }
     else 
     {
-        Write-Error "Failed to find adjustment factor and/or update time in $webUrl"
-        Write-Error "Check if skimmer is down"
+        Write-Error "Failed to find update time in $webUrl"
         exit 1
     }
 
