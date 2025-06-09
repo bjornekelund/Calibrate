@@ -1,10 +1,11 @@
-# PowerShell script to parse web page, calculate, and update text file
+# PowerShell script to update frequency calibration of CWSL_DIGI and two instances of SkimSrv
+# Reads skew data from sm7iun.se/rbn/analytics and updates the ini files accordingly.
 
-$dryrun = $false # Set to $false to actually update the files
-
-# Configuration
+$dryrun = $false  # Set to $false to actually update the files
 
 $ProgressPreference = 'SilentlyContinue' # Show no progress bar
+
+$callsign = "SM7IUN"
 
 $webUrl = "https://sm7iun.se/rbn/analytics"
 $inipath1 = $env:APPDATA + "\Afreet\Products\SkimSrv\"
@@ -36,7 +37,7 @@ try {
     # Format of line 
     # FreqCalibration=1.00828283
 	$inicontent = Get-Content $inifilepath1 -Raw
-	$inimatch = [regex]::Match($inicontent, 'FreqCalibration=(\d+\.\d+)?') 
+	$inimatch = [regex]::Match($inicontent, 'FreqCalibration=([01]\.\d+)?') 
 
     if ($inimatch.Success) 
     {
@@ -45,17 +46,34 @@ try {
     }
     else 
     {
-        Write-Error "Failed to read calibration factor from $inifile1"
+        Write-Error "Failed to read CWSL_DIGI calibration factor from $inifile1"
+        exit 1
+    }
+
+    # Parse CWSL_DIGI config file for current calibration factor
+    # Format of line 
+    # freqcalibration=1.00828283
+	$configcontent = Get-Content $inifilepath3 -Raw
+	$configmatch = [regex]::Match($configcontent, 'freqcalibration=([01]\.\d+)?') 
+
+    if ($configmatch.Success) 
+    {
+		$configcalibration = [double]$configmatch.Groups[1].Value
+		Write-Host "Current CWSL_DIGI calibration factor is: $configcalibration"
+    }
+    else 
+    {
+        Write-Error "Failed to read calibration factor from $inifile3"
         exit 1
     }
 
     # Parse web page for adjustment factor
     # The web page should contain a line with the callsign and adjustment factor
+    # Callsign has optional asterisk, followed by frequency error in ppm, spot count, and adjustment factor
     # Format of line
     #   SM7IUN*     +0.1   3999   1.000000099
     $webContent = Invoke-WebRequest -Uri $webUrl -UseBasicParsing
-	$callsign = "SM7IUN"
-    $webmatch = [regex]::Match($webContent.Content, $callsign + '\*? +[+-]\d\.\d+ +\d+ +(\d\.\d+)')
+    $webmatch = [regex]::Match($webContent.Content, $callsign + '\*? +[+-]\d\.\d+ +\d+ +([01]\.\d+)')
 
     if ($webMatch.Success) 
     {
@@ -70,9 +88,9 @@ try {
 
     # Calculate new calibration factors
     $skimsrvcalibration = [Math]::Round($newCalibration * $inicalibration, 9)
-    Write-Host "New calibration factor for SkimSrv: $skimsrvcalibration"
+#    Write-Host "New calibration factor for SkimSrv: $skimsrvcalibration"
     $cwsldigicalibration = [Math]::Round(1.0 / ($newCalibration * $inicalibration), 9)
-    Write-Host "New calibration factor for CWSL_DIGI: $cwsldigicalibration"
+#    Write-Host "New calibration factor for CWSL_DIGI: $cwsldigicalibration"
     
     # Stop the applications
     Write-Host "Stopping $exefile1, $exefile2, and $exefile3..."
