@@ -33,7 +33,8 @@ $ProgressPreference = 'SilentlyContinue' # Show no progress bar
 Write-Host "--------------------------------------------------"
 Write-Host "Execution time is" (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
 
-try {
+try 
+{
     # Parse SkimSrv ini file for current calibration factor
     # Both ini files should have the same calibration factor
     # Format of line 
@@ -56,7 +57,7 @@ try {
     # Format of line 
     # freqcalibration=1.00828283
     $configContent = Get-Content $configFilePath -Raw
-    $configMatch = [regex]::Match($configContent, 'freqcalibration=([01]\.\d+)?') 
+    $configMatch = [regex]::Match($configContent, 'freqcalibration=([01]\.\d+)?')
 
     if ($configMatch.Success) 
     {
@@ -130,10 +131,13 @@ try {
         $newContent1 = $fileContent1 -replace $replacementPattern, "`${1}$skimSrvCalibration"
         $newContent2 = $fileContent2 -replace $replacementPattern, "`${1}$skimSrvCalibration"
 
-        if (-not $dryRun) {
+        if (-not $dryRun) 
+        {
             $newContent1 | Set-Content $iniFilePath1
             $newContent2 | Set-Content $iniFilePath2
-        } else {
+        } 
+        else 
+        {
             Write-Host "*** Dry run mode is on, not updating SkimSrv ini files."
         }
 
@@ -147,7 +151,8 @@ try {
         exit 1
     }
 
-    if (Test-Path $configFilePath) {
+    if (Test-Path $configFilePath)
+    {
         # Read the CWSL_DIGI config file
         $fileContent3 = Get-Content $configFilePath -Raw
 
@@ -155,9 +160,12 @@ try {
         # freqcalibration=1.000000000
         $replacementPattern3 = '(freqcalibration=)\d\.\d+'
         $newContent3 = $fileContent3 -replace $replacementPattern3, "`${1}$cwsldigiCalibration"
-        if (-not $dryRun) {
+        if (-not $dryRun) 
+        {
             $newContent3 | Set-Content $configFilePath
-        } else {
+        } 
+        else 
+        {
             Write-Host "*** Dry run mode is on, not updating CWSL_DIGI config file."
         }
 
@@ -183,7 +191,8 @@ try {
 
     Write-Host "Update complete. Applications restarted."
 }
-catch {
+catch 
+{
     Write-Error "An error occurred: $($_.Exception.Message)"
     exit 1
 }
