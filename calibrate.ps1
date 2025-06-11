@@ -38,13 +38,13 @@ try {
     # Both ini files should have the same calibration factor
     # Format of line 
     # FreqCalibration=1.00828283
-	$iniContent = Get-Content $iniFilePath1 -Raw
-	$iniMatch = [regex]::Match($iniContent, 'FreqCalibration=([01]\.\d+)?') 
+    $iniContent = Get-Content $iniFilePath1 -Raw
+    $iniMatch = [regex]::Match($iniContent, 'FreqCalibration=([01]\.\d+)?') 
 
     if ($iniMatch.Success) 
     {
-		$inicalibration = [double]$iniMatch.Groups[1].Value
-		Write-Host "Current SkimSrv calibration factor is: $inicalibration"
+        $inicalibration = [double]$iniMatch.Groups[1].Value
+        Write-Host "Current SkimSrv calibration factor is: $inicalibration"
     }
     else 
     {
@@ -55,13 +55,13 @@ try {
     # Parse CWSL_DIGI config file for current calibration factor
     # Format of line 
     # freqcalibration=1.00828283
-	$configContent = Get-Content $configFilePath -Raw
-	$configMatch = [regex]::Match($configContent, 'freqcalibration=([01]\.\d+)?') 
+    $configContent = Get-Content $configFilePath -Raw
+    $configMatch = [regex]::Match($configContent, 'freqcalibration=([01]\.\d+)?') 
 
     if ($configMatch.Success) 
     {
-		$configCalibration = [double]$configMatch.Groups[1].Value
-		Write-Host "Current CWSL_DIGI calibration factor is: $configCalibration"
+        $configCalibration = [double]$configMatch.Groups[1].Value
+        Write-Host "Current CWSL_DIGI calibration factor is: $configCalibration"
     }
     else 
     {
