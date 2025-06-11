@@ -9,4 +9,4 @@ more than once per day and preferrably around 00:30 UTC, directly after the cont
 of the web page with skew information has been updated.
 
 To allow execution of the dailycalibration batch file from Windows scheduler, 
-run setexecutionpolicy.ps1 in a PowerShell window as administrator. 
+you may need to run setexecutionpolicy.ps1 in a PowerShell window as administrator. 
