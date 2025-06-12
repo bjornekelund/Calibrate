@@ -76,7 +76,8 @@ try
     # Format of line
     #   SM7IUN*     +0.1   3999   1.000000099
     # Last updated 2025-06-09 00:16:23 UTC
-    $webContent = Invoke-WebRequest -Uri $webUrl -UseBasicParsing -Headers @{"Cache-Control"="no-cache"}
+    $headers = @{'Cache-Control'='no-cache,no-store,must-revalidate';'Pragma'='no-cache';'Expires'='0'}
+    $webContent = Invoke-WebRequest -Uri $webUrl -UseBasicParsing -Headers $headers
     $webMatch = [regex]::Match($webContent.Content, $callsign + '\*? +[+-]\d\.\d+ +\d+ +([01]\.\d+)')
     $webTimeMatch = [regex]::Match($webContent.Content, 'Last updated +(20\d{2}-\d{1,2}-\d{1,2} +\d{1,2}:\d{2}:\d{2})')
 
