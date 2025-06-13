@@ -5,28 +5,41 @@ $dryRun = $false  # Set to $false to actually update the files
 
 $callsign = "SM7IUN"  # Callsign to look for in the web page
 
-# Configuration
+# Configuration for this specific installation
+
+$skimsrv1 = $true  # Set to $true if you have SkimSrv installed
+$skimsrv2 = $true  # Set to $true if you have two instances of SkimSrv installed
+$rttyskimserv = $false  # Set to $true if one instance of RttySkimServ is installed
+$cwsldigi = $true  # Set to $true if you are using CWSL_DIGI
 
 $webUrl = "https://sm7iun.se/rbn/analytics"
+
 $iniPath1 = $env:APPDATA + "\Afreet\Products\SkimSrv\"
 $iniPath2 = $env:APPDATA + "\Afreet\Products\SkimSrv2\"
+$iniPath3 = $env:APPDATA + "\Afreet\Products\RttySkimServ\"
 $configPath = "C:\CWSL_DIGI\"
 
 $iniFile1 = "SkimSrv.ini"
 $iniFile2 = "SkimSrv2.ini"
+$iniFile3 = "RttySkimServ.ini"
 $configFile = "config.ini"
-
-$iniFilePath1 = $iniPath1 + $iniFile1
-$iniFilePath2 = $iniPath2 + $iniFile2
-$configFilePath = $configPath + $configFile
 
 $skimsrvPath1 = "C:\Program Files (x86)\Afreet\SkimSrv"
 $skimsrvPath2 = "C:\Program Files (x86)\Afreet\SkimSrv2"
+$skimsrvPath3 = "C:\Program Files (x86)\Afreet\RttySkimServ"
 $cwslPath = "C:\CWSL_DIGI"
 
 $skimsrvExe1 = "SkimSrv.exe"
 $skimsrvExe2 = "SkimSrv2.exe"
+$skimsrvExe3 = "RttySkimServ.exe"
 $cwslExe = "CWSL_DIGI.exe"
+
+# End of configuration
+
+$iniFilePath1 = $iniPath1 + $iniFile1
+$iniFilePath2 = $iniPath2 + $iniFile2
+$iniFilePath3 = $iniPath3 + $iniFile3
+$configFilePath = $configPath + $configFile
 
 $ProgressPreference = 'SilentlyContinue' # Show no progress bar
 
@@ -36,44 +49,63 @@ Write-Host "Execution time is" (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
 try 
 {
     # Parse SkimSrv ini file for current calibration factor
-    # Both ini files should have the same calibration factor
+    # Assume this to be the value of all SkimSrv and RttySkimSrv instances
     # Format of line 
     # FreqCalibration=1.00828283
-    $iniContent = Get-Content $iniFilePath1 -Raw
-    $iniMatch = [regex]::Match($iniContent, 'FreqCalibration=([01]\.\d+)?') 
+    if ($skimsrv1 -and (Test-Path $iniFilePath1)) 
+    {
+        Write-Host "Reading SkimSrv ini file: $iniFilePath1"
+        $iniContent = Get-Content $iniFilePath1 -Raw
+    } 
+    elseif ($rttyskimserv -and (Test-Path $iniFilePath3)) 
+    {
+        Write-Host "Reading RttySkimServ ini file: $iniFilePath3"
+        $iniContent = Get-Content $iniFilePath3 -Raw
+    } 
+    else 
+    {
+        Write-Error "No skimmer ini available. Exiting."
+        exit 1
+    }
+
+    $iniMatch = [regex]::Match($iniContent, 'FreqCalibration=(0\.\d+|1(\.\d+)?)') 
 
     if ($iniMatch.Success) 
     {
         $inicalibration = [double]$iniMatch.Groups[1].Value
-        Write-Host "Current SkimSrv calibration factor is: $inicalibration"
+        Write-Host "Current skimmer calibration factor is: $inicalibration"
     }
     else 
     {
-        Write-Error "Failed to read CWSL_DIGI calibration factor from $iniFile1"
+        Write-Error "Failed to read skimmer calibration factor from $iniFile1"
         exit 1
     }
 
     # Parse CWSL_DIGI config file for current calibration factor
     # Format of line 
     # freqcalibration=1.00828283
-    $configContent = Get-Content $configFilePath -Raw
-    $configMatch = [regex]::Match($configContent, 'freqcalibration=([01]\.\d+)?')
+    if ($cwsldigi -and (Test-Path $configFilePath)) 
+    {
+        $configContent = Get-Content $configFilePath -Raw
+        $configMatch = [regex]::Match($configContent, 'freqcalibration=([01]\.\d+)?')
 
-    if ($configMatch.Success) 
-    {
-        $configCalibration = [double]$configMatch.Groups[1].Value
-        Write-Host "Current CWSL_DIGI calibration factor is: $configCalibration"
-    }
-    else 
-    {
-        Write-Error "Failed to read calibration factor from $configFile"
-        exit 1
-    }
+        if ($configMatch.Success) 
+        {
+            $configCalibration = [double]$configMatch.Groups[1].Value
+            Write-Host "Current CWSL_DIGI calibration factor is: $configCalibration"
+        }
+        else 
+        {
+            Write-Error "Failed to read calibration factor from $configFile"
+            exit 1
+        }
+    }     
 
     # Parse web page for adjustment factor
     # The web page should contain a line with the desired callsign and statistics/analytics
     # Callsign has optional asterisk, followed by frequency error in ppm, spot count, and adjustment factor
-    # Format of line
+    # Make sure Invoke-WebRequest pushes through the cache
+        # Format of line
     #   SM7IUN*     +0.1   3999   1.000000099
     # Last updated 2025-06-09 00:16:23 UTC
     $headers = @{'Cache-Control'='no-cache,no-store,must-revalidate';'Pragma'='no-cache';'Expires'='0'}
@@ -107,11 +139,14 @@ try
 #    Write-Host "New calibration factor for CWSL_DIGI: $cwsldigiCalibration"
     
     # Stop the applications
-    Write-Host "Stopping $skimsrvExe1, $skimsrvExe2, and $cwslExe..."
+    Write-Host "Stopping skimmer processes..."
 
     # Stop SkimSrv instances
     Stop-Process -Name "SkimSrv*" -Force -ErrorAction SilentlyContinue 
     
+    # Stop RttySkimServ instance
+    Stop-Process -Name "RttySkimServ*" -Force -ErrorAction SilentlyContinue
+
     # Close CWSL_DIGI process including subprocesses
     Stop-Process -Name "CWSL*" -Force -ErrorAction SilentlyContinue
     Stop-Process -Name "jt9*" -Force -ErrorAction SilentlyContinue
@@ -120,75 +155,156 @@ try
     Write-Host "Wait for OS process clean up..."
     Start-Sleep -Seconds 2
 
-    if ($(Test-Path $iniFilePath1) -and (Test-Path $iniFilePath2)) 
+    if ($skimsrv1) 
     {
-        # Read the ini files
-        $fileContent1 = Get-Content $iniFilePath1 -Raw
-        $fileContent2 = Get-Content $iniFilePath2 -Raw
-        
-        # Replace number in ini files
-        #   FreqCalibration=1.00828283
-        $replacementPattern = '(FreqCalibration=)\d\.\d+'
-        $newContent1 = $fileContent1 -replace $replacementPattern, "`${1}$skimSrvCalibration"
-        $newContent2 = $fileContent2 -replace $replacementPattern, "`${1}$skimSrvCalibration"
-
-        if (-not $dryRun) 
+        if (Test-Path $iniFilePath1) 
         {
-            $newContent1 | Set-Content $iniFilePath1
-            $newContent2 | Set-Content $iniFilePath2
-        } 
+            # Read the ini files
+            $fileContent1 = Get-Content $iniFilePath1 -Raw
+            
+            # Replace number in ini files
+            #   FreqCalibration=1.00828283
+            $replacementPattern = '(FreqCalibration=)\d\.\d+'
+            $newContent1 = $fileContent1 -replace $replacementPattern, "`${1}$skimSrvCalibration"
+
+            if (-not $dryRun) 
+            {
+                $newContent1 | Set-Content $iniFilePath1
+            } 
+            else 
+            {
+                Write-Host "*** Dry run mode is on, not updating SkimSrv ini files."
+            }
+
+            # Announce success
+            Write-Host "Successfully updated $iniFile1 ini with new calibration value: $skimSrvCalibration"
+
+            if ($skimsrv2) 
+            {
+                if ((Test-Path $iniFilePath2) -and $skimsrv2)
+                {
+                    # Read the ini files
+                    $fileContent2 = Get-Content $iniFilePath2 -Raw
+                    
+                    # Replace number in ini files
+                    #   FreqCalibration=1.00828283
+                    $replacementPattern = '(FreqCalibration=)\d\.\d+'
+                    $newContent2 = $fileContent2 -replace $replacementPattern, "`${1}$skimSrvCalibration"
+
+                    if (-not $dryRun) 
+                    {
+                        $newContent2 | Set-Content $iniFilePath2
+                    } 
+                    else 
+                    {
+                        Write-Host "*** Dry run mode is on, not updating SkimSrv ini files."
+                    }
+
+                    # Announce success
+                    Write-Host "Successfully updated $iniFile2 ini with new calibration value: $skimSrvCalibration"
+                }
+                else 
+                {
+                    Write-Error "$iniFile2 file not found. Exiting."
+                    exit 1
+                }
+            }
+        }
         else 
         {
-            Write-Host "*** Dry run mode is on, not updating SkimSrv ini files."
+            Write-Error "$iniFile1 file not found. Exiting."
+            exit 1
         }
-
-        # Announce success
-        Write-Host "Successfully updated $iniFile1 ini with new calibration value: $skimSrvCalibration"
-        Write-Host "Successfully updated $iniFile2 ini with new calibration value: $skimSrvCalibration"
-    }
-    else 
-    {
-        Write-Error "Ini file not found: $iniFilePath1"
-        exit 1
     }
 
-    if (Test-Path $configFilePath)
-    {
-        # Read the CWSL_DIGI config file
-        $fileContent3 = Get-Content $configFilePath -Raw
 
-        # Replace calibration factor in config file
-        # freqcalibration=1.000000000
-        $replacementPattern3 = '(freqcalibration=)\d\.\d+'
-        $newContent3 = $fileContent3 -replace $replacementPattern3, "`${1}$cwsldigiCalibration"
-        if (-not $dryRun) 
+    if ($rttyskimserv)
+    {
+        if (Test-Path $iniFilePath3)
         {
-            $newContent3 | Set-Content $configFilePath
-        } 
+            # Read the ini files
+            $fileContent3 = Get-Content $iniFilePath3 -Raw
+            
+            # Replace number in ini files
+            #   FreqCalibration=1.00828283
+            $replacementPattern = '(FreqCalibration=)\d\.\d+'
+            $newContent3 = $fileContent3 -replace $replacementPattern, "`${1}$skimSrvCalibration"
+
+            if (-not $dryRun) 
+            {
+                $newContent3 | Set-Content $iniFilePath3
+            } 
+            else 
+            {
+                Write-Host "*** Dry run mode is on, not updating SkimSrv ini files."
+            }
+
+            # Announce success
+            Write-Host "Successfully updated $iniFile3 ini with new calibration value: $skimSrvCalibration"
+        }
         else 
         {
-            Write-Host "*** Dry run mode is on, not updating CWSL_DIGI config file."
+            Write-Error "$iniFile3 file not found. Exiting."
+            exit 1
         }
-
-        # Announce success
-        Write-Host "Successfully updated $configFile with new calibration value: $cwsldigiCalibration"
     }
-    else 
+
+    if ($cwsldigi) 
     {
-        Write-Error "Ini file not found: $configFilePath"
-        exit 1
+        if (Test-Path $configFilePath )
+        {
+            # Read the CWSL_DIGI config file
+            $fileContent3 = Get-Content $configFilePath -Raw
+
+            # Replace calibration factor in config file
+            # freqcalibration=1.000000000
+            $replacementPattern3 = '(freqcalibration=)\d\.\d+'
+            $newContent3 = $fileContent3 -replace $replacementPattern3, "`${1}$cwsldigiCalibration"
+            if (-not $dryRun) 
+            {
+                $newContent3 | Set-Content $configFilePath
+            } 
+            else 
+            {
+                Write-Host "*** Dry run mode is on, not updating CWSL_DIGI config file."
+            }
+
+            # Announce success
+            Write-Host "Successfully updated $configFile with new calibration value: $cwsldigiCalibration"
+        }
+        else 
+        {
+            Write-Error "Ini file not found: $configFilePath"
+            exit 1
+        }
     }
     
     # Start applications again
-    Write-Host "Starting $skimsrvExe1..."
-    Start-Process -WorkingDirectory $skimsrvPath1 -FilePath $skimsrvExe1 -WindowStyle Minimized
-    Start-Sleep -Seconds 2
+    if ($skimsrv1)
+    {
+        Write-Host "Starting $skimsrvExe1..."
+        Start-Process -WorkingDirectory $skimsrvPath1 -FilePath $skimsrvExe1 -WindowStyle Minimized
+    }
 
-    Write-Host "Starting $skimsrvExe2..."
-    Start-Process -WorkingDirectory $skimsrvPath2 -FilePath $skimsrvExe2 -WindowStyle Minimized
+    if ($skimsrv2)
+    {
+        Start-Sleep -Seconds 2
+        Write-Host "Starting $skimsrvExe2..."
+        Start-Process -WorkingDirectory $skimsrvPath2 -FilePath $skimsrvExe2 -WindowStyle Minimized
+    }
 
-    Write-Host "Starting CWSL_DIGI..."
-    Start-Process -WorkingDirectory $cwslPath -FilePath $cwslExe -WindowStyle Minimized
+    if ($rttyskimserv)
+    {
+        Start-Sleep -Seconds 2
+        Write-Host "Starting $skimsrvExe3..."
+        Start-Process -WorkingDirectory $skimsrvPath3 -FilePath $skimsrvExe3 -WindowStyle Minimized
+    }
+
+    if ($cwsldigi)
+    {
+        Write-Host "Starting CWSL_DIGI..."
+        Start-Process -WorkingDirectory $cwslPath -FilePath $cwslExe -WindowStyle Minimized
+    }
 
     Write-Host "Update complete. Applications restarted."
 }
