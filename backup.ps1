@@ -1,17 +1,4 @@
-# PowerShell script to update frequency calibration of CWSL_DIGI and two instances of SkimSrv
-# Reads skew data from sm7iun.se/rbn/analytics and updates the ini files accordingly.
-
-# MyScript.ps1
-param(
-    [switch]$DryRun,
-    [switch]$Verbose
-)
-
-if ($Verbose) { Write-Host "Verbose mode enabled" }
-if ($DryRun) { Write-Host "Dry run mode enabled" }
-#$DryRun = $false  # Set to $false to actually update the files
-
-$callsign = "SM7IUN"  # Callsign to look for in the web page
+# PowerShell script to back up frequency calibration of CWSL_DIGI and two instances of SkimSrv
 
 # Configuration for this specific installation
 
@@ -19,8 +6,6 @@ $skimsrv1 = $true  # Set to $true if you have SkimSrv installed
 $skimsrv2 = $true  # Set to $true if you have two instances of SkimSrv installed
 $rttyskimserv = $false  # Set to $true if one instance of RttySkimServ is installed
 $cwsldigi = $true  # Set to $true if you are using CWSL_DIGI
-
-$webUrl = "https://sm7iun.se/rbn/analytics"
 
 $iniPath1 = $env:APPDATA + "\Afreet\Products\SkimSrv\"
 $iniPath2 = $env:APPDATA + "\Afreet\Products\SkimSrv2\"
@@ -32,16 +17,6 @@ $iniFile2 = "SkimSrv2.ini"
 $iniFile3 = "RttySkimServ.ini"
 $configFile = "config.ini"
 
-$skimsrvPath1 = "C:\Program Files (x86)\Afreet\SkimSrv"
-$skimsrvPath2 = "C:\Program Files (x86)\Afreet\SkimSrv2"
-$skimsrvPath3 = "C:\Program Files (x86)\Afreet\RttySkimServ"
-$cwslPath = "C:\CWSL_DIGI"
-
-$skimsrvExe1 = "SkimSrv.exe"
-$skimsrvExe2 = "SkimSrv2.exe"
-$skimsrvExe3 = "RttySkimServ.exe"
-$cwslExe = "CWSL_DIGI.exe"
-
 # End of configuration
 
 $iniFilePath1 = $iniPath1 + $iniFile1
@@ -49,10 +24,7 @@ $iniFilePath2 = $iniPath2 + $iniFile2
 $iniFilePath3 = $iniPath3 + $iniFile3
 $configFilePath = $configPath + $configFile
 
-$ProgressPreference = 'SilentlyContinue' # Show no progress bar
-
-Write-Host "--------------------------------------------------"
-Write-Host "Execution time is" (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+exit 0
 
 try 
 {
@@ -99,7 +71,7 @@ try
     if ($cwsldigi -and (Test-Path $configFilePath)) 
     {
         $configContent = Get-Content $configFilePath -Raw
-        $configMatch = [regex]::Match($configContent, 'freqcalibration=(0\.\d+|1(\.\d+)?)')
+        $configMatch = [regex]::Match($configContent, 'freqcalibration=(0\.\d+|1(\.\d+)?')
 
         if ($configMatch.Success) 
         {
