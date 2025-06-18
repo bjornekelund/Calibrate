@@ -1,19 +1,9 @@
 # PowerShell script to update frequency calibration of CWSL_DIGI and two instances of SkimSrv
 # Reads skew data from sm7iun.se/rbn/analytics and updates the ini files accordingly.
 
-# MyScript.ps1
-param(
-    [switch]$DryRun,
-    [switch]$Verbose
-)
-
-if ($Verbose) { Write-Host "Verbose mode enabled" }
-if ($DryRun) { Write-Host "Dry run mode enabled" }
-#$DryRun = $false  # Set to $false to actually update the files
+# Configuration for this specific installation
 
 $callsign = "SM7IUN"  # Callsign to look for in the web page
-
-# Configuration for this specific installation
 
 $skimsrv1 = $true  # Set to $true if you have SkimSrv installed
 $skimsrv2 = $true  # Set to $true if you have two instances of SkimSrv installed
@@ -48,6 +38,15 @@ $skimsrvExe4 = "RttySkimServ2.exe"
 $cwslExe = "CWSL_DIGI.exe"
 
 # End of configuration
+
+# MyScript.ps1
+param(
+    [switch]$DryRun,
+    [switch]$Verbose
+)
+
+if ($Verbose) { Write-Host "Verbose mode enabled" }
+if ($DryRun) { Write-Host "Dry run mode enabled" }
 
 $iniFilePath1 = $iniPath1 + $iniFile1
 $iniFilePath2 = $iniPath2 + $iniFile2
