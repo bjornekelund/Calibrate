@@ -17,29 +17,34 @@ $callsign = "SM7IUN"  # Callsign to look for in the web page
 
 $skimsrv1 = $true  # Set to $true if you have SkimSrv installed
 $skimsrv2 = $true  # Set to $true if you have two instances of SkimSrv installed
-$rttyskimserv = $false  # Set to $true if one instance of RttySkimServ is installed
+$rttyskimserv1 = $false  # Set to $true if one instance of RttySkimServ is installed
+$rttyskimserv2 = $false  # Set to $true if one instance of RttySkimServ is installed
 $cwsldigi = $true  # Set to $true if you are using CWSL_DIGI
 
 $webUrl = "https://sm7iun.se/rbn/analytics"
 
 $iniPath1 = $env:APPDATA + "\Afreet\Products\SkimSrv\"
 $iniPath2 = $env:APPDATA + "\Afreet\Products\SkimSrv2\"
-$iniPath3 = $env:APPDATA + "\Afreet\Products\RttySkimServ\"
+$iniPath3 = $env:APPDATA + "\Afreet\Products\RttySkimServ1\"
+$iniPath4 = $env:APPDATA + "\Afreet\Products\RttySkimServ2\"
 $configPath = "C:\CWSL_DIGI\"
 
 $iniFile1 = "SkimSrv.ini"
 $iniFile2 = "SkimSrv2.ini"
-$iniFile3 = "RttySkimServ.ini"
+$iniFile3 = "RttySkimServ1.ini"
+$iniFile4 = "RttySkimServ2.ini"
 $configFile = "config.ini"
 
 $skimsrvPath1 = "C:\Program Files (x86)\Afreet\SkimSrv"
 $skimsrvPath2 = "C:\Program Files (x86)\Afreet\SkimSrv2"
-$skimsrvPath3 = "C:\Program Files (x86)\Afreet\RttySkimServ"
+$skimsrvPath3 = "C:\Program Files (x86)\Afreet\RttySkimServ1"
+$skimsrvPath4 = "C:\Program Files (x86)\Afreet\RttySkimServ2"
 $cwslPath = "C:\CWSL_DIGI"
 
 $skimsrvExe1 = "SkimSrv.exe"
 $skimsrvExe2 = "SkimSrv2.exe"
-$skimsrvExe3 = "RttySkimServ.exe"
+$skimsrvExe3 = "RttySkimServ1.exe"
+$skimsrvExe4 = "RttySkimServ2.exe"
 $cwslExe = "CWSL_DIGI.exe"
 
 # End of configuration
@@ -47,6 +52,7 @@ $cwslExe = "CWSL_DIGI.exe"
 $iniFilePath1 = $iniPath1 + $iniFile1
 $iniFilePath2 = $iniPath2 + $iniFile2
 $iniFilePath3 = $iniPath3 + $iniFile3
+$iniFilePath4 = $iniPath4 + $iniFile4
 $configFilePath = $configPath + $configFile
 
 $ProgressPreference = 'SilentlyContinue' # Show no progress bar
@@ -68,7 +74,7 @@ try
         $iniContent = Get-Content $iniFilePath1 -Raw
         $usedIniFile = $iniFile1
     } 
-    elseif ($rttyskimserv -and (Test-Path $iniFilePath3)) 
+    elseif ($rttyskimserv1 -and (Test-Path $iniFilePath3)) 
     {
         Write-Host "Reading RttySkimServ ini file: $iniFilePath3"
         $iniContent = Get-Content $iniFilePath3 -Raw
@@ -227,7 +233,7 @@ try
     }
 
 
-    if ($rttyskimserv)
+    if ($rttyskimserv1)
     {
         if (Test-Path $iniFilePath3)
         {
@@ -252,6 +258,35 @@ try
         else 
         {
             Write-Error "$iniFile3 file not found."
+            exit 1
+        }
+    }
+
+    if ($rttyskimserv2)
+    {
+        if (Test-Path $iniFilePath4)
+        {
+            # Read the ini files
+            $fileContent4 = Get-Content $iniFilePath4 -Raw
+            
+            # Replace number in ini files
+            #   FreqCalibration=1.00828283
+            $replacementPattern = '(FreqCalibration=)\d\.\d+'
+            $newContent4 = $fileContent4 -replace $replacementPattern, "`${1}$skimSrvCalibration"
+
+            if (-not $DryRun) 
+            {
+                $newContent4 | Set-Content $iniFilePath4
+                Write-Host "Successfully updated $iniFile4 ini with new calibration value: $skimSrvCalibration"
+            } 
+            else 
+            {
+                Write-Host "Did not update $iniFile4 ini with new calibration value: $skimSrvCalibration"
+            }
+        }
+        else 
+        {
+            Write-Error "$iniFile4 file not found."
             exit 1
         }
     }
@@ -298,11 +333,18 @@ try
         Start-Process -WorkingDirectory $skimsrvPath2 -FilePath $skimsrvExe2 -WindowStyle Minimized
     }
 
-    if ($rttyskimserv)
+    if ($rttyskimserv1)
     {
         Start-Sleep -Seconds 2
         Write-Host "Starting $skimsrvExe3..."
         Start-Process -WorkingDirectory $skimsrvPath3 -FilePath $skimsrvExe3 -WindowStyle Minimized
+    }
+
+    if ($rttyskimserv2)
+    {
+        Start-Sleep -Seconds 2
+        Write-Host "Starting $skimsrvExe4..."
+        Start-Process -WorkingDirectory $skimsrvPath4 -FilePath $skimsrvExe4 -WindowStyle Minimized
     }
 
     if ($cwsldigi)
