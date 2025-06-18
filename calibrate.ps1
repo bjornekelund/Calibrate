@@ -39,7 +39,6 @@ $cwslExe = "CWSL_DIGI.exe"
 
 # End of configuration
 
-# MyScript.ps1
 param(
     [switch]$DryRun,
     [switch]$Verbose
