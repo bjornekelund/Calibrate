@@ -10,7 +10,7 @@ $callsign = "SM7IUN"  # Callsign to look for in the web page
 $skimsrv1 = $true  # Set to $true if you have SkimSrv installed
 $skimsrv2 = $true  # Set to $true if you have two instances of SkimSrv installed
 $rttyskimserv1 = $false  # Set to $true if one instance of RttySkimServ is installed
-$rttyskimserv2 = $false  # Set to $true if one instance of RttySkimServ is installed
+$rttyskimserv2 = $false  # Set to $true if you have instances of RttySkimServ installed
 $cwsldigi = $true  # Set to $true if you are using CWSL_DIGI
 
 $webUrl = "https://sm7iun.se/rbn/analytics"
