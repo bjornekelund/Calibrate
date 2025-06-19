@@ -81,7 +81,7 @@ try
         exit 1
     }
 
-    $iniMatch = [regex]::Match($iniContent, 'FreqCalibration=(0\.\d+|1(\.\d+)?)') 
+    $iniMatch = [regex]::Match($iniContent, 'FreqCalibration=(0\.\d+|1(\.\d+)?)', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase) 
 
     if ($iniMatch.Success) 
     {
@@ -100,7 +100,7 @@ try
     if ($cwsldigi -and (Test-Path $configFilePath)) 
     {
         $configContent = Get-Content $configFilePath -Raw
-        $configMatch = [regex]::Match($configContent, 'freqcalibration=(0\.\d+|1(\.\d+)?)')
+        $configMatch = [regex]::Match($configContent, 'freqcalibration=(0\.\d+|1(\.\d+)?)', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
 
         if ($configMatch.Success) 
         {
@@ -124,8 +124,8 @@ try
     # Last updated 2025-06-09 00:16:23 UTC
     $headers = @{'Cache-Control'='no-cache,no-store,must-revalidate';'Pragma'='no-cache';'Expires'='0'}
     $webContent = Invoke-WebRequest -Uri $webUrl -UseBasicParsing -Headers $headers
-    $webMatch = [regex]::Match($webContent.Content, $callsign + '\*? +[+-]\d\.\d+ +\d+ +([01]\.\d+)')
-    $webTimeMatch = [regex]::Match($webContent.Content, 'Last updated +(20\d{2}-\d{1,2}-\d{1,2} +\d{1,2}:\d{2}:\d{2})')
+    $webMatch = [regex]::Match($webContent.Content, $callsign + '\*? +[+-]\d\.\d+ +\d+ +([01]\.\d+)', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+    $webTimeMatch = [regex]::Match($webContent.Content, 'Last updated +(20\d{2}-\d{1,2}-\d{1,2} +\d{1,2}:\d{2}:\d{2})', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
 
     if (-not $webMatch.Success) 
     {
