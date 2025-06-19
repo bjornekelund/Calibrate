@@ -31,7 +31,7 @@ $skimsrvPath1 = "C:\Program Files (x86)\Afreet\SkimSrv\"
 $skimsrvPath2 = "C:\Program Files (x86)\Afreet\SkimSrv2\"
 $skimsrvPath3 = "C:\Program Files (x86)\Afreet\RttySkimServ1\"
 $skimsrvPath4 = "C:\Program Files (x86)\Afreet\RttySkimServ2\"
-$cwslPath = "C:\CWSL_DIGI"
+$cwslPath = "C:\CWSL_DIGI\"
 
 $skimsrvExe1 = "SkimSrv.exe"
 $skimsrvExe2 = "SkimSrv2.exe"
