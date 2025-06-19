@@ -27,10 +27,10 @@ $iniFile3 = "RttySkimServ1.ini"
 $iniFile4 = "RttySkimServ2.ini"
 $configFile = "config.ini"
 
-$skimsrvPath1 = "C:\Program Files (x86)\Afreet\SkimSrv"
-$skimsrvPath2 = "C:\Program Files (x86)\Afreet\SkimSrv2"
-$skimsrvPath3 = "C:\Program Files (x86)\Afreet\RttySkimServ1"
-$skimsrvPath4 = "C:\Program Files (x86)\Afreet\RttySkimServ2"
+$skimsrvPath1 = "C:\Program Files (x86)\Afreet\SkimSrv\"
+$skimsrvPath2 = "C:\Program Files (x86)\Afreet\SkimSrv2\"
+$skimsrvPath3 = "C:\Program Files (x86)\Afreet\RttySkimServ1\"
+$skimsrvPath4 = "C:\Program Files (x86)\Afreet\RttySkimServ2\"
 $cwslPath = "C:\CWSL_DIGI"
 
 $skimsrvExe1 = "SkimSrv.exe"
@@ -77,7 +77,7 @@ try
     } 
     else 
     {
-        Write-Error "No skimmer ini file available. Exiting."
+        Write-Host "No skimmer ini file available. Exiting."
         exit 1
     }
 
@@ -90,7 +90,7 @@ try
     }
     else 
     {
-        Write-Error "Failed to read skimmer calibration factor from $usedIniFile"
+        Write-Host "Failed to to find a valid FreqCalibration= line in from $usedIniFile. Exiting."
         exit 1
     }
 
@@ -109,7 +109,7 @@ try
         }
         else 
         {
-            Write-Error "Failed to read calibration factor from $configFile"
+            Write-Host "Failed to find a valid freqcalibration= line in $configFile. Exiting"
             exit 1
         }
     }     
@@ -136,12 +136,15 @@ try
     if ($webTimeMatch.Success) 
     {
         $lastUpdated = $webTimeMatch.Groups[1].Value
-        $newCalibration = [double]$webMatch.Groups[1].Value
-        Write-Host "Adjustment factor from $webUrl at $lastUpdated from is: $newCalibration"
+        $webCalibration = [double]$webMatch.Groups[1].Value
+        Write-Host "Absolute adjustment factor from $webUrl at $lastUpdated from is: $webCalibration"
+        # Since there are statistical variations adjustment factor, only do a gradual adjustment
+        $newCalibration = [Math]::Round([System.Math]::Pow($webCalibration, 0.6), 9)
+        Write-Host "Used adjustment factor is: $newCalibration"
     }
     else 
     {
-        Write-Error "Failed to find last update time in $webUrl."
+        Write-Host "Failed to find last update time in $webUrl. Exiting."
         exit 1
     }
 
@@ -191,38 +194,39 @@ try
                 Write-Host "Did not update $iniFile1 ini with new calibration value: $skimSrvCalibration"
             }
 
-            if ($skimsrv2) 
-            {
-                if ((Test-Path $iniFilePath2) -and $skimsrv2)
-                {
-                    # Read the ini files
-                    $fileContent2 = Get-Content $iniFilePath2 -Raw
-                    
-                    # Replace number in ini files
-                    #   FreqCalibration=1.00828283
-                    $replacementPattern = '(FreqCalibration=)\d\.\d+'
-                    $newContent2 = $fileContent2 -replace $replacementPattern, "`${1}$skimSrvCalibration"
-
-                    if (-not $DryRun) 
-                    {
-                        $newContent2 | Set-Content $iniFilePath2
-                        Write-Host "Successfully updated $iniFile2 ini with new calibration value: $skimSrvCalibration"
-                    } 
-                    else 
-                    {
-                        Write-Host "Did not update $iniFile2 ini with new calibration value: $skimSrvCalibration"
-                    }
-                }
-                else 
-                {
-                    Write-Error "$iniFile2 file not found."
-                    exit 1
-                }
-            }
         }
         else 
         {
             Write-Error "$iniFile1 file not found."
+            exit 1
+        }
+    }
+
+    if ($skimsrv2) 
+    {
+        if (Test-Path $iniFilePath2)
+        {
+            # Read the ini files
+            $fileContent2 = Get-Content $iniFilePath2 -Raw
+            
+            # Replace number in ini files
+            #   FreqCalibration=1.00828283
+            $replacementPattern = '(FreqCalibration=)\d\.\d+'
+            $newContent2 = $fileContent2 -replace $replacementPattern, "`${1}$skimSrvCalibration"
+
+            if (-not $DryRun) 
+            {
+                $newContent2 | Set-Content $iniFilePath2
+                Write-Host "Successfully updated $iniFile2 ini with new calibration value: $skimSrvCalibration"
+            } 
+            else 
+            {
+                Write-Host "Did not update $iniFile2 ini with new calibration value: $skimSrvCalibration"
+            }
+        }
+        else 
+        {
+            Write-Error "$iniFile2 file not found."
             exit 1
         }
     }
@@ -252,8 +256,7 @@ try
         }
         else 
         {
-            Write-Error "$iniFile3 file not found."
-            exit 1
+            Write-Host "$iniFile3 file not found."
         }
     }
 
@@ -281,8 +284,7 @@ try
         }
         else 
         {
-            Write-Error "$iniFile4 file not found."
-            exit 1
+            Write-Host "$iniFile4 file not found."
         }
     }
 
