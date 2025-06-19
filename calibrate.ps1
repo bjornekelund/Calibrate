@@ -117,8 +117,8 @@ try
     # Scrape web page for adjustment factor
     # If the skimmer has produced enough spots, the web page contains a line with the desired statistics/analytics
     # The callsign has optional trailing asterisk, followed by frequency error in ppm, spot count, and adjustment factor
-    # Also find the last updated time of the web page to confirm that the data is fresh
-    # Make sure Invoke-WebRequest pushes through the cache
+    # Also find the update time of the web page to confirm that the data is fresh
+    # Use header options to make sure Invoke-WebRequest pushes through the cache
         # Format of line
     #   SM7IUN*     +0.1   3999   1.000000099
     # Last updated 2025-06-09 00:16:23 UTC
@@ -176,14 +176,15 @@ try
     Write-Host "Wait for OS process clean up..."
     Start-Sleep -Seconds 2
 
+    # Regular expression replacement pattern to update ini and config files
+    # Case insensitive since CWSL_DIGI is
     $replacementPattern = [regex]::new("(freqcalibration=)(1(\.\d+)?|0\.\d+)", [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
 
     if ($skimsrv1) 
     {
         if (Test-Path $iniFilePath1) 
         {
-            $fileContent1 = Get-Content $iniFilePath1 -Raw
-            $newContent1 = $fileContent1 -replace $replacementPattern, "`${1}$skimSrvCalibration"
+            $newContent1 = (Get-Content $iniFilePath1 -Raw) -replace $replacementPattern, "`${1}$skimSrvCalibration"
 
             if (-not $DryRun) 
             {
@@ -207,8 +208,7 @@ try
     {
         if (Test-Path $iniFilePath2)
         {
-            $fileContent2 = Get-Content $iniFilePath2 -Raw
-            $newContent2 = $fileContent2 -replace $replacementPattern, "`${1}$skimSrvCalibration"
+            $newContent2 = (Get-Content $iniFilePath2 -Raw) -replace $replacementPattern, "`${1}$skimSrvCalibration"
 
             if (-not $DryRun) 
             {
@@ -228,13 +228,11 @@ try
         }
     }
 
-
     if ($rttyskimserv1)
     {
         if (Test-Path $iniFilePath3)
         {
-            $fileContent3 = Get-Content $iniFilePath3 -Raw      
-            $newContent3 = $fileContent3 -replace $replacementPattern, "`${1}$skimSrvCalibration"
+            $newContent3 = (Get-Content $iniFilePath3 -Raw) -replace $replacementPattern, "`${1}$skimSrvCalibration"
 
             if (-not $DryRun) 
             {
@@ -258,8 +256,7 @@ try
     {
         if (Test-Path $iniFilePath4)
         {
-            $fileContent4 = Get-Content $iniFilePath4 -Raw
-            $newContent4 = $fileContent4 -replace $replacementPattern, "`${1}$skimSrvCalibration"
+            $newContent4 = (Get-Content $iniFilePath4 -Raw) -replace $replacementPattern, "`${1}$skimSrvCalibration"
 
             if (-not $DryRun) 
             {
@@ -283,8 +280,7 @@ try
     {
         if (Test-Path $configFilePath )
         {
-            $fileContent3 = Get-Content $configFilePath -Raw
-            $newContent3 = $fileContent3 -replace $replacementPattern, "`${1}$cwsldigiCalibration"
+            $newContent3 = (Get-Content $configFilePath -Raw) -replace $replacementPattern, "`${1}$cwsldigiCalibration"
 
             if (-not $DryRun) 
             {
