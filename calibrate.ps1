@@ -81,7 +81,7 @@ try
         exit 1
     }
 
-    $iniMatch = [regex]::Match($iniContent, 'FreqCalibration=(0\.\d+|1(\.\d+)?)', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase) 
+    $iniMatch = [regex]::Match($iniContent, 'freqcalibration=(0\.\d+|1(\.\d+)?)', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase) 
 
     if ($iniMatch.Success) 
     {
@@ -100,7 +100,7 @@ try
     if ($cwsldigi -and (Test-Path $configFilePath)) 
     {
         $configContent = Get-Content $configFilePath -Raw
-        $configMatch = [regex]::Match($configContent, 'freqcalibration=(0\.\d+|1(\.\d+)?)', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+        $configMatch = [regex]::Match($configContent, '\sfreqcalibration=(0\.\d+|1(\.\d+)?)', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
 
         if ($configMatch.Success) 
         {
@@ -109,7 +109,7 @@ try
         }
         else 
         {
-            Write-Host "Failed to find a valid freqcalibration= line in $configFile. Exiting"
+            Write-Host "Failed to find a valid freqcalibration= line in $configFile. Is it perhaps commented out? Exiting"
             exit 1
         }
     }     
@@ -122,9 +122,13 @@ try
         # Format of line
     #   SM7IUN*     +0.1   3999   1.000000099
     # Last updated 2025-06-09 00:16:23 UTC
-    $headers = @{'Cache-Control'='no-cache,no-store,must-revalidate';'Pragma'='no-cache';'Expires'='0'}
+    # Make sure to push through cache
+    $headers = @{'Cache-Control' = 'no-cache, no-store, must-revalidate'; 'Pragma' = 'no-cache'; 'Expires' = '0'}
+    # Get content from web page
     $webContent = Invoke-WebRequest -Uri $webUrl -UseBasicParsing -Headers $headers
+    # Look for relevant line with skew data
     $webMatch = [regex]::Match($webContent.Content, $callsign + '\*? +[+-]\d\.\d+ +\d+ +([01]\.\d+)')
+    # Look for time stamp
     $webTimeMatch = [regex]::Match($webContent.Content, 'Last updated +(20\d{2}-\d{1,2}-\d{1,2} +\d{1,2}:\d{2}:\d{2})')
 
     if (-not $webMatch.Success) 
@@ -137,8 +141,8 @@ try
     {
         $lastUpdated = $webTimeMatch.Groups[1].Value
         $webCalibration = [double]$webMatch.Groups[1].Value
-        Write-Host "Absolute adjustment factor from $webUrl at $lastUpdated from is: $webCalibration"
-        # Since there are statistical variations adjustment factor, only do a gradual adjustment
+        Write-Host "Absolute adjustment factor from $webUrl at $lastUpdated UTC from is: $webCalibration"
+        # Since there are statistical variations adjustment factor, do not compensate fully but do a gradual adjustment
         $newCalibration = [Math]::Round([System.Math]::Pow($webCalibration, 0.6), 9)
         Write-Host "Moderated and used adjustment factor is: $newCalibration"
     }
@@ -172,32 +176,29 @@ try
     Write-Host "Wait for OS process clean up..."
     Start-Sleep -Seconds 2
 
+    $replacementPattern = [regex]::new("(freqcalibration=)(1(\.\d+)?|0\.\d+)", [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+
     if ($skimsrv1) 
     {
         if (Test-Path $iniFilePath1) 
         {
-            # Read the ini files
             $fileContent1 = Get-Content $iniFilePath1 -Raw
-            
-            # Replace number in ini files
-            #   FreqCalibration=1.00828283
-            $replacementPattern = '(FreqCalibration=)\d\.\d+'
             $newContent1 = $fileContent1 -replace $replacementPattern, "`${1}$skimSrvCalibration"
 
             if (-not $DryRun) 
             {
+                # Replace calibration factor with new value
                 $newContent1 | Set-Content $iniFilePath1
-                Write-Host "Successfully updated $iniFile1 ini with new calibration value: $skimSrvCalibration"
+                Write-Host "Successfully updated $iniFile1 with new calibration value: $skimSrvCalibration"
             } 
             else 
             {
-                Write-Host "Did not update $iniFile1 ini with new calibration value: $skimSrvCalibration"
+                Write-Host "Did not update $iniFile1 with new calibration value: $skimSrvCalibration"
             }
-
         }
         else 
         {
-            Write-Error "$iniFile1 file not found."
+            Write-Error "$iniFile1 not found."
             exit 1
         }
     }
@@ -206,27 +207,23 @@ try
     {
         if (Test-Path $iniFilePath2)
         {
-            # Read the ini files
             $fileContent2 = Get-Content $iniFilePath2 -Raw
-            
-            # Replace number in ini files
-            #   FreqCalibration=1.00828283
-            $replacementPattern = '(FreqCalibration=)\d\.\d+'
             $newContent2 = $fileContent2 -replace $replacementPattern, "`${1}$skimSrvCalibration"
 
             if (-not $DryRun) 
             {
+                # Replace calibration factor with new value
                 $newContent2 | Set-Content $iniFilePath2
-                Write-Host "Successfully updated $iniFile2 ini with new calibration value: $skimSrvCalibration"
+                Write-Host "Successfully updated $iniFile2 with new calibration value: $skimSrvCalibration"
             } 
             else 
             {
-                Write-Host "Did not update $iniFile2 ini with new calibration value: $skimSrvCalibration"
+                Write-Host "Did not update $iniFile2 with new calibration value: $skimSrvCalibration"
             }
         }
         else 
         {
-            Write-Error "$iniFile2 file not found."
+            Write-Error "$iniFile2 not found."
             exit 1
         }
     }
@@ -236,27 +233,24 @@ try
     {
         if (Test-Path $iniFilePath3)
         {
-            # Read the ini files
-            $fileContent3 = Get-Content $iniFilePath3 -Raw
-            
-            # Replace number in ini files
-            #   FreqCalibration=1.00828283
-            $replacementPattern = '(FreqCalibration=)\d\.\d+'
+            $fileContent3 = Get-Content $iniFilePath3 -Raw      
             $newContent3 = $fileContent3 -replace $replacementPattern, "`${1}$skimSrvCalibration"
 
             if (-not $DryRun) 
             {
+                # Replace calibration factor with new value
                 $newContent3 | Set-Content $iniFilePath3
-                Write-Host "Successfully updated $iniFile3 ini with new calibration value: $skimSrvCalibration"
+                Write-Host "Successfully updated $iniFile3 with new calibration value: $skimSrvCalibration"
             } 
             else 
             {
-                Write-Host "Did not update $iniFile3 ini with new calibration value: $skimSrvCalibration"
+                Write-Host "Did not update $iniFile3 with new calibration value: $skimSrvCalibration"
             }
         }
         else 
         {
-            Write-Host "$iniFile3 file not found."
+            Write-Host "$iniFile3 not found. Exiting."
+            exit 1
         }
     }
 
@@ -264,27 +258,24 @@ try
     {
         if (Test-Path $iniFilePath4)
         {
-            # Read the ini files
             $fileContent4 = Get-Content $iniFilePath4 -Raw
-            
-            # Replace number in ini files
-            #   FreqCalibration=1.00828283
-            $replacementPattern = '(FreqCalibration=)\d\.\d+'
             $newContent4 = $fileContent4 -replace $replacementPattern, "`${1}$skimSrvCalibration"
 
             if (-not $DryRun) 
             {
+                # Replace calibration factor with new value
                 $newContent4 | Set-Content $iniFilePath4
-                Write-Host "Successfully updated $iniFile4 ini with new calibration value: $skimSrvCalibration"
+                Write-Host "Successfully updated $iniFile4 with new calibration value: $skimSrvCalibration"
             } 
             else 
             {
-                Write-Host "Did not update $iniFile4 ini with new calibration value: $skimSrvCalibration"
+                Write-Host "Did not update $iniFile4 with new calibration value: $skimSrvCalibration"
             }
         }
         else 
         {
-            Write-Host "$iniFile4 file not found."
+            Write-Host "$iniFile4 not found. Exiting."
+            exit 1
         }
     }
 
@@ -292,17 +283,14 @@ try
     {
         if (Test-Path $configFilePath )
         {
-            # Read the CWSL_DIGI config file
             $fileContent3 = Get-Content $configFilePath -Raw
+            $newContent3 = $fileContent3 -replace $replacementPattern, "`${1}$cwsldigiCalibration"
 
-            # Replace calibration factor in config file
-            # freqcalibration=1.000000000
-            $replacementPattern3 = '(freqcalibration=)\d\.\d+'
-            $newContent3 = $fileContent3 -replace $replacementPattern3, "`${1}$cwsldigiCalibration"
             if (-not $DryRun) 
             {
+                # Replace calibration factor with new value
                 $newContent3 | Set-Content $configFilePath
-            Write-Host "Successfully updated $configFile with new calibration value: $cwsldigiCalibration"
+                Write-Host "Successfully updated $configFile with new calibration value: $cwsldigiCalibration"
             } 
             else 
             {
