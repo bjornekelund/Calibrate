@@ -124,8 +124,8 @@ try
     # Last updated 2025-06-09 00:16:23 UTC
     $headers = @{'Cache-Control'='no-cache,no-store,must-revalidate';'Pragma'='no-cache';'Expires'='0'}
     $webContent = Invoke-WebRequest -Uri $webUrl -UseBasicParsing -Headers $headers
-    $webMatch = [regex]::Match($webContent.Content, $callsign + '\*? +[+-]\d\.\d+ +\d+ +([01]\.\d+)', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
-    $webTimeMatch = [regex]::Match($webContent.Content, 'Last updated +(20\d{2}-\d{1,2}-\d{1,2} +\d{1,2}:\d{2}:\d{2})', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+    $webMatch = [regex]::Match($webContent.Content, $callsign + '\*? +[+-]\d\.\d+ +\d+ +([01]\.\d+)')
+    $webTimeMatch = [regex]::Match($webContent.Content, 'Last updated +(20\d{2}-\d{1,2}-\d{1,2} +\d{1,2}:\d{2}:\d{2})')
 
     if (-not $webMatch.Success) 
     {
@@ -140,7 +140,7 @@ try
         Write-Host "Absolute adjustment factor from $webUrl at $lastUpdated from is: $webCalibration"
         # Since there are statistical variations adjustment factor, only do a gradual adjustment
         $newCalibration = [Math]::Round([System.Math]::Pow($webCalibration, 0.6), 9)
-        Write-Host "Used adjustment factor is: $newCalibration"
+        Write-Host "Moderated and used adjustment factor is: $newCalibration"
     }
     else 
     {
