@@ -142,12 +142,15 @@ try
         $lastUpdated = $webTimeMatch.Groups[1].Value
         $webCalibration = [double]$webMatch.Groups[1].Value
         Write-Host "Absolute adjustment factor from $webUrl at $lastUpdated UTC from is: $webCalibration"
-        write-host "This corresponds to an skew of " + [Math]::Round(($webCalibration - 1) * 1000000, 2) + " ppm"
+        $webskew = ($webCalibration - 1.0) * 1000000.0
+        $absSkew = [Math]::Abs($webskew).ToString("F2")
+        $direction = if ($webskew -gt 0) { "high" } else { "low" }        
+        Write-Host "This means reports are on average $absSkew ppm too $direction."
         # Since there are statistical variations adjustment factor, do not compensate fully but do a gradual adjustment
         $newCalibration = [Math]::Round([System.Math]::Pow($webCalibration, 0.5), 9)
+        $skewadjustment = ((1.0 - $newCalibration) * 1000000.0).ToString("F2")
 
-        Write-Host "Moderated and used adjustment factor is: $newCalibration"
-        Write-Host "This corresponds to an adjustment of " + [Math]::Round(($newCalibration - 1) * 1000000, 2) + " ppm"
+        Write-Host "The moderated adjustment factor is: $newCalibration corresponding to an adjustment of reports of $skewadjustment ppm"
     }
     else 
     {
