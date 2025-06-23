@@ -161,12 +161,12 @@ try
     # Calculate new calibration factors
     # Round to 9 decimal places like in the web page which is an overkill of accuracy
     $skimSrvCalibration = [Math]::Round($newCalibration * $inicalibration, 9)
-#    Write-Host "New calibration factor for SkimSrv: $skimSrvCalibration"
+    if ($Verbose) { Write-Host "New calibration factor for SkimSrv: $skimSrvCalibration" }
     $cwsldigiCalibration = [Math]::Round(1.0 / ($newCalibration * $inicalibration), 9)
-#    Write-Host "New calibration factor for CWSL_DIGI: $cwsldigiCalibration"
+    if ($Verbose) { Write-Host "New calibration factor for CWSL_DIGI: $cwsldigiCalibration" }
     
     # Stop the applications
-    Write-Host "Stopping skimmer processes..."
+    if ($Verbose) { Write-Host "Stopping skimmer processes..." }
 
     # Stop SkimSrv instances
     Stop-Process -Name "SkimSrv*" -Force -ErrorAction SilentlyContinue 
@@ -179,7 +179,7 @@ try
     Stop-Process -Name "jt9*" -Force -ErrorAction SilentlyContinue
 
     # Wait a moment for cleanup
-    Write-Host "Wait for OS process clean up..."
+    if ($Verbose) { Write-Host "Wait for OS process clean up..." }
     Start-Sleep -Seconds 2
 
     # Regular expression replacement pattern to update ini and config files
@@ -205,7 +205,7 @@ try
         }
         else 
         {
-            Write-Error "$iniFile1 not found."
+            Write-Host "$iniFile1 not found."
             exit 1
         }
     }
@@ -229,7 +229,7 @@ try
         }
         else 
         {
-            Write-Error "$iniFile2 not found."
+            Write-Host "$iniFile2 not found."
             exit 1
         }
     }
@@ -301,7 +301,7 @@ try
         }
         else 
         {
-            Write-Error "$configFile not found."
+            Write-Host "$configFile not found. Exiting."
             exit 1
         }
     }
@@ -309,34 +309,34 @@ try
     # Start applications again
     if ($skimsrv1)
     {
-        Write-Host "Starting $skimsrvExe1..."
+        if ($Verbose) { Write-Host "Starting $skimsrvExe1..." }
         Start-Process -WorkingDirectory $skimsrvPath1 -FilePath $skimsrvExe1 -WindowStyle Minimized
     }
 
     if ($skimsrv2)
     {
         Start-Sleep -Seconds 2
-        Write-Host "Starting $skimsrvExe2..."
+        if ($Verbose) { Write-Host "Starting $skimsrvExe2..." }
         Start-Process -WorkingDirectory $skimsrvPath2 -FilePath $skimsrvExe2 -WindowStyle Minimized
     }
 
     if ($rttyskimserv1)
     {
         Start-Sleep -Seconds 2
-        Write-Host "Starting $skimsrvExe3..."
+        if ($Verbose) { Write-Host "Starting $skimsrvExe3..." }
         Start-Process -WorkingDirectory $skimsrvPath3 -FilePath $skimsrvExe3 -WindowStyle Minimized
     }
 
     if ($rttyskimserv2)
     {
         Start-Sleep -Seconds 2
-        Write-Host "Starting $skimsrvExe4..."
+        if ($Verbose) { Write-Host "Starting $skimsrvExe4..." }
         Start-Process -WorkingDirectory $skimsrvPath4 -FilePath $skimsrvExe4 -WindowStyle Minimized
     }
 
     if ($cwsldigi)
     {
-        Write-Host "Starting CWSL_DIGI..."
+        if ($Verbose) { Write-Host "Starting CWSL_DIGI..." }
         Start-Process -WorkingDirectory $cwslPath -FilePath $cwslExe -WindowStyle Minimized
     }
 
