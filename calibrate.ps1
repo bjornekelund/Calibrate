@@ -4,45 +4,52 @@
 param([switch]$DryRun, [switch]$Verbose)
 
 # Configuration for this specific installation
+# This is the only part of the script that should be edited
 
 $callsign = "SM7IUN"  # Callsign to look for in the web page
 
-$skimsrv1 = $true  # Set to $true if you have SkimSrv installed
-$skimsrv2 = $true  # Set to $true if you have two instances of SkimSrv installed
+$skimsrv1 = $true        # Set to $true if you have SkimSrv installed
+$skimsrv2 = $true        # Set to $true if you have two instances of SkimSrv installed
 $rttyskimserv1 = $false  # Set to $true if one instance of RttySkimServ is installed
-$rttyskimserv2 = $false  # Set to $true if you have instances of RttySkimServ installed
-$cwsldigi = $true  # Set to $true if you are using CWSL_DIGI
+$rttyskimserv2 = $false  # Set to $true if you have two instances of RttySkimServ installed
+$cwsldigi = $true        # Set to $true if you are using CWSL_DIGI
 
 $webUrl = "https://sm7iun.se/rbn/analytics"
 
+# Location of ini files and CWSL_DIGI config file
 $iniPath1 = $env:APPDATA + "\Afreet\Products\SkimSrv\"
 $iniPath2 = $env:APPDATA + "\Afreet\Products\SkimSrv2\"
 $iniPath3 = $env:APPDATA + "\Afreet\Products\RttySkimServ1\"
 $iniPath4 = $env:APPDATA + "\Afreet\Products\RttySkimServ2\"
 $configPath = "C:\CWSL_DIGI\"
 
+# Naming of ini files and CWSL_DIGI config file
 $iniFile1 = "SkimSrv.ini"
 $iniFile2 = "SkimSrv2.ini"
 $iniFile3 = "RttySkimServ1.ini"
 $iniFile4 = "RttySkimServ2.ini"
 $configFile = "config.ini"
 
+# Installation paths for SkimSrv and CWSL_DIGI
 $skimsrvPath1 = "C:\Program Files (x86)\Afreet\SkimSrv\"
 $skimsrvPath2 = "C:\Program Files (x86)\Afreet\SkimSrv2\"
 $skimsrvPath3 = "C:\Program Files (x86)\Afreet\RttySkimServ1\"
 $skimsrvPath4 = "C:\Program Files (x86)\Afreet\RttySkimServ2\"
 $cwslPath = "C:\CWSL_DIGI\"
 
+# Names of executables
 $skimsrvExe1 = "SkimSrv.exe"
 $skimsrvExe2 = "SkimSrv2.exe"
 $skimsrvExe3 = "RttySkimServ1.exe"
 $skimsrvExe4 = "RttySkimServ2.exe"
 $cwslExe = "CWSL_DIGI.exe"
 
-# End of configuration
+# End of configuration section
+# Normally no parts below should require editing
+# If you find that you need to edit something below, please report it to the author
 
 if ($Verbose) { Write-Host "Verbose mode enabled" }
-if ($DryRun) { Write-Host "Dry run mode enabled" }
+if ($DryRun -and $Verbose) { Write-Host "Dry run mode enabled" }
 
 $iniFilePath1 = $iniPath1 + $iniFile1
 $iniFilePath2 = $iniPath2 + $iniFile2
@@ -50,10 +57,11 @@ $iniFilePath3 = $iniPath3 + $iniFile3
 $iniFilePath4 = $iniPath4 + $iniFile4
 $configFilePath = $configPath + $configFile
 
-$ProgressPreference = 'SilentlyContinue' # Show no progress bar
+# Show now progress bars for web requests and file operations
+$ProgressPreference = 'SilentlyContinue'
 
 Write-Host "--------------------------------------------------"
-Write-Host "Execution time is" (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+Write-Host "Starting update at $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")"
 
 try 
 {
@@ -65,13 +73,13 @@ try
     # FreqCalibration=1
     if ($skimsrv1 -and (Test-Path $iniFilePath1)) 
     {
-        Write-Host "Reading SkimSrv ini file: $iniFilePath1"
+        if ($Verbose) { Write-Host "Reading SkimSrv ini file: $iniFilePath1" }
         $iniContent = Get-Content $iniFilePath1 -Raw
         $usedIniFile = $iniFile1
     } 
     elseif ($rttyskimserv1 -and (Test-Path $iniFilePath3)) 
     {
-        Write-Host "Reading RttySkimServ ini file: $iniFilePath3"
+        if ($Verbose) { Write-Host "Reading RttySkimServ ini file: $iniFilePath3" }
         $iniContent = Get-Content $iniFilePath3 -Raw
         $usedIniFile = $iniFile3
     } 
@@ -141,16 +149,16 @@ try
     {
         $lastUpdated = $webTimeMatch.Groups[1].Value
         $webCalibration = [double]$webMatch.Groups[1].Value
-        Write-Host "Absolute adjustment factor from $webUrl at $lastUpdated UTC from is: $webCalibration"
+        Write-Host "Reading skew data from $webUrl published at $lastUpdated UTC"
         $webskew = ($webCalibration - 1.0) * 1000000.0
         $absSkew = [Math]::Abs($webskew).ToString("F2")
         $direction = if ($webskew -gt 0) { "high" } else { "low" }        
-        Write-Host "This means reports are on average $absSkew ppm too $direction."
+        Write-Host "Suggested adjustment factor is $webCalibration meaning reports are on average $absSkew ppm too $direction"
         # Since there are statistical variations adjustment factor, do not compensate fully but do a gradual adjustment
         $newCalibration = [Math]::Round([System.Math]::Pow($webCalibration, 0.5), 9)
         $skewadjustment = ((1.0 - $newCalibration) * 1000000.0).ToString("F2")
 
-        Write-Host "The moderated adjustment factor is: $newCalibration corresponding to an adjustment of reports of $skewadjustment ppm"
+        Write-Host "The moderated adjustment factor is $newCalibration corresponding to an adjustment of reports of $skewadjustment ppm"
     }
     else 
     {
@@ -180,7 +188,7 @@ try
 
     # Wait a moment for cleanup
     if ($Verbose) { Write-Host "Wait for OS process clean up..." }
-    Start-Sleep -Seconds 2
+    Start-Sleep -Seconds 4
 
     # Regular expression replacement pattern to update ini and config files
     # Case insensitive since CWSL_DIGI is
@@ -315,21 +323,24 @@ try
 
     if ($skimsrv2)
     {
-        Start-Sleep -Seconds 2
+        # Wait a moment to let UDP stream stabilize
+        Start-Sleep -Seconds 3
         if ($Verbose) { Write-Host "Starting $skimsrvExe2..." }
         Start-Process -WorkingDirectory $skimsrvPath2 -FilePath $skimsrvExe2 -WindowStyle Minimized
     }
 
     if ($rttyskimserv1)
     {
-        Start-Sleep -Seconds 2
+        # Wait a moment to let UDP stream stabilize
+        Start-Sleep -Seconds 3
         if ($Verbose) { Write-Host "Starting $skimsrvExe3..." }
         Start-Process -WorkingDirectory $skimsrvPath3 -FilePath $skimsrvExe3 -WindowStyle Minimized
     }
 
     if ($rttyskimserv2)
     {
-        Start-Sleep -Seconds 2
+        # Wait a moment to let UDP stream stabilize
+        Start-Sleep -Seconds 3
         if ($Verbose) { Write-Host "Starting $skimsrvExe4..." }
         Start-Process -WorkingDirectory $skimsrvPath4 -FilePath $skimsrvExe4 -WindowStyle Minimized
     }
@@ -340,7 +351,8 @@ try
         Start-Process -WorkingDirectory $cwslPath -FilePath $cwslExe -WindowStyle Minimized
     }
 
-    Write-Host "Update complete. Applications restarted."
+    if ($Verbose) { Write-Host "Applications restarted." }
+    Write-Host "Update complete at $(Get-Date -Format "HH:mm:ss")"
 }
 catch 
 {
