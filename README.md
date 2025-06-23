@@ -1,5 +1,5 @@
 # Calibrate
-A PowerShell script kit to run nightly to calibrate [RBN](https://www.reversebeacon.net/main.php?rows=10&max_age=10,hours&hide=distance_km) skimmers.
+A PowerShell script kit to run nightly to calibrate [RBN](https://www.reversebeacon.net/main.php) skimmers.
 
 Calibrates CW (CW Skimmer Server), RTTY (RTTY Skimmer Server), and digital mode (CWSL_DIGI) 
 instances based on skew data published on [sm7iun.se](https://sm7iun.se/rbn/analytics/)
