@@ -1,8 +1,10 @@
-# PowerShell script to update frequency calibration of CWSL_DIGI and two instances of SkimSrv
-# Reads skew data from sm7iun.se/rbn/analytics and updates the ini files accordingly.
+# PowerShell script to adjust frequency calibration of up to two instances 
+# of SkimSrv, up to two instances of RTTY SkimSrv, and CWSL_DIGI.
+# Uses skew data published at https://sm7iun.se/rbn/analytics
 
 param([switch]$DryRun, [switch]$Verbose)
 
+# -----------------------------------------------------------
 # Configuration for this specific installation
 # This is the only part of the script that should be edited
 
@@ -14,8 +16,6 @@ $rttyskimserv1 = $false  # Set to $true if one instance of RttySkimServ is insta
 $rttyskimserv2 = $false  # Set to $true if you have two instances of RttySkimServ installed
 $cwsldigi = $true        # Set to $true if you are using CWSL_DIGI
 
-$webUrl = "https://sm7iun.se/rbn/analytics"
-
 # Location of ini files and CWSL_DIGI config file
 $iniPath1 = $env:APPDATA + "\Afreet\Products\SkimSrv\"
 $iniPath2 = $env:APPDATA + "\Afreet\Products\SkimSrv2\"
@@ -23,21 +23,21 @@ $iniPath3 = $env:APPDATA + "\Afreet\Products\RttySkimServ1\"
 $iniPath4 = $env:APPDATA + "\Afreet\Products\RttySkimServ2\"
 $configPath = "C:\CWSL_DIGI\"
 
-# Naming of ini files and CWSL_DIGI config file
+# Naming of ini and config files
 $iniFile1 = "SkimSrv.ini"
 $iniFile2 = "SkimSrv2.ini"
 $iniFile3 = "RttySkimServ1.ini"
 $iniFile4 = "RttySkimServ2.ini"
 $configFile = "config.ini"
 
-# Installation paths for SkimSrv and CWSL_DIGI
+# Installation paths for SkimSrv, RttySkimSrv, and CWSL_DIGI
 $skimsrvPath1 = "C:\Program Files (x86)\Afreet\SkimSrv\"
 $skimsrvPath2 = "C:\Program Files (x86)\Afreet\SkimSrv2\"
 $skimsrvPath3 = "C:\Program Files (x86)\Afreet\RttySkimServ1\"
 $skimsrvPath4 = "C:\Program Files (x86)\Afreet\RttySkimServ2\"
 $cwslPath = "C:\CWSL_DIGI\"
 
-# Names of executables
+# Naming of executables
 $skimsrvExe1 = "SkimSrv.exe"
 $skimsrvExe2 = "SkimSrv2.exe"
 $skimsrvExe3 = "RttySkimServ1.exe"
@@ -45,8 +45,12 @@ $skimsrvExe4 = "RttySkimServ2.exe"
 $cwslExe = "CWSL_DIGI.exe"
 
 # End of configuration section
+# -----------------------------------------------------------
+
 # Normally no parts below should require editing
-# If you find that you need to edit something below, please report it to the author
+# If you find that you need to edit something below, please let the author know
+
+$webUrl = "https://sm7iun.se/rbn/analytics"
 
 if ($Verbose) { Write-Host "Verbose mode enabled" }
 if ($DryRun -and $Verbose) { Write-Host "Dry run mode enabled" }
@@ -89,7 +93,7 @@ try
         exit 1
     }
 
-    $iniMatch = [regex]::Match($iniContent, 'freqcalibration=(0\.\d+|1(\.\d+)?)', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase) 
+    $iniMatch = [regex]::Match($iniContent, '\sfreqcalibration=(0\.\d+|1(\.\d+)?)', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase) 
 
     if ($iniMatch.Success) 
     {
