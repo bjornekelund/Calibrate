@@ -70,8 +70,8 @@ Write-Host "Starting update at $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")"
 try 
 {
     # Parse SkimSrv ini file for current calibration factor
-    # If no SkimSrv ini file is found, try RttySkimServ ini file
-    # Assume the found value to be for all SkimSrv and RttySkimSrv instances
+    # If no SkimSrv ini file is found amd RttySkimSrv is used, try RttySkimServ's ini file
+    # Assume the found factor to be the one used by all SkimSrv and RttySkimSrv instances
     # Format of line 
     # FreqCalibration=1.00828283
     # FreqCalibration=1
@@ -93,7 +93,8 @@ try
         exit 1
     }
 
-    $iniMatch = [regex]::Match($iniContent, '\sfreqcalibration=(0\.\d+|1(\.\d+)?)', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase) 
+    $iniMatch = [regex]::Match($iniContent, '\sfreqcalibration=(0\.\d+|1(\.\d+)?)', 
+        [System.Text.RegularExpressions.RegexOptions]::IgnoreCase) 
 
     if ($iniMatch.Success) 
     {
@@ -112,7 +113,8 @@ try
     if ($cwsldigi -and (Test-Path $configFilePath)) 
     {
         $configContent = Get-Content $configFilePath -Raw
-        $configMatch = [regex]::Match($configContent, '\sfreqcalibration=(0\.\d+|1(\.\d+)?)', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+        $configMatch = [regex]::Match($configContent, '\sfreqcalibration=(0\.\d+|1(\.\d+)?)', 
+            [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
 
         if ($configMatch.Success) 
         {
@@ -121,7 +123,7 @@ try
         }
         else 
         {
-            Write-Host "Failed to find a valid freqcalibration= line in $configFile. Is it perhaps commented out? Exiting"
+            Write-Host "Failed to find a valid freqcalibration= line in $configFile. Is it commented out? Exiting"
             exit 1
         }
     }     
@@ -196,7 +198,8 @@ try
 
     # Regular expression replacement pattern to update ini and config files
     # Case insensitive since CWSL_DIGI is
-    $replacementPattern = [regex]::new("(freqcalibration=)(1(\.\d+)?|0\.\d+)", [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+    $replacementPattern = [regex]::new("(freqcalibration=)(1(\.\d+)?|0\.\d+)", 
+        [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
 
     if ($skimsrv1) 
     {
@@ -208,11 +211,11 @@ try
             {
                 # Replace calibration factor with new value
                 $newContent1 | Set-Content $iniFilePath1
-                Write-Host "Successfully updated $iniFile1 with new calibration value: $skimSrvCalibration"
+                Write-Host "Successfully updated $iniFile1 with new calibration factor: $skimSrvCalibration"
             } 
             else 
             {
-                Write-Host "Did not update $iniFile1 with new calibration value: $skimSrvCalibration"
+                Write-Host "Did not update $iniFile1 with new calibration factor: $skimSrvCalibration"
             }
         }
         else 
@@ -232,11 +235,11 @@ try
             {
                 # Replace calibration factor with new value
                 $newContent2 | Set-Content $iniFilePath2
-                Write-Host "Successfully updated $iniFile2 with new calibration value: $skimSrvCalibration"
+                Write-Host "Successfully updated $iniFile2 with new calibration factor: $skimSrvCalibration"
             } 
             else 
             {
-                Write-Host "Did not update $iniFile2 with new calibration value: $skimSrvCalibration"
+                Write-Host "Did not update $iniFile2 with new calibration factor: $skimSrvCalibration"
             }
         }
         else 
@@ -254,13 +257,13 @@ try
 
             if (-not $DryRun) 
             {
-                # Replace calibration factor with new value
+                # Replace calibration factor with new factor
                 $newContent3 | Set-Content $iniFilePath3
-                Write-Host "Successfully updated $iniFile3 with new calibration value: $skimSrvCalibration"
+                Write-Host "Successfully updated $iniFile3 with new calibration factor: $skimSrvCalibration"
             } 
             else 
             {
-                Write-Host "Did not update $iniFile3 with new calibration value: $skimSrvCalibration"
+                Write-Host "Did not update $iniFile3 with new calibration factor: $skimSrvCalibration"
             }
         }
         else 
@@ -280,11 +283,11 @@ try
             {
                 # Replace calibration factor with new value
                 $newContent4 | Set-Content $iniFilePath4
-                Write-Host "Successfully updated $iniFile4 with new calibration value: $skimSrvCalibration"
+                Write-Host "Successfully updated $iniFile4 with new calibration factor: $skimSrvCalibration"
             } 
             else 
             {
-                Write-Host "Did not update $iniFile4 with new calibration value: $skimSrvCalibration"
+                Write-Host "Did not update $iniFile4 with new calibration factor: $skimSrvCalibration"
             }
         }
         else 
@@ -304,11 +307,11 @@ try
             {
                 # Replace calibration factor with new value
                 $newContent3 | Set-Content $configFilePath
-                Write-Host "Successfully updated $configFile with new calibration value: $cwsldigiCalibration"
+                Write-Host "Successfully updated $configFile with new calibration factor: $cwsldigiCalibration"
             } 
             else 
             {
-                Write-Host "Did not update $configFile with new calibration value: $cwsldigiCalibration"
+                Write-Host "Did not update $configFile with new calibration factor: $cwsldigiCalibration"
             }
         }
         else 
