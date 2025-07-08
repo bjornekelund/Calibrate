@@ -10,7 +10,8 @@ of the web page with skew information has been updated.
 
 `dailycalibration.bat` is intended to run nightly using Windows Task Scheduler and also creates a log file. 
 
-Depending on your PC's policy settings, you may need to run `setexecutionpolicy.ps1` in a 
-PowerShell window as administrator to allow execution of `dailycalibration.bat` by Windows Task Scheduler.
+Depending on your PC's policy settings, you may need to run the commands in `setexecutionpolicy.txt` in a 
+PowerShell window as administrator to allow execution of the script files, 
+including `dailycalibration.bat` by Windows Task Scheduler.
 
 `testrun.bat` and `testrunv.bat` (verbose) are test scripts that runs without updating any files. 
