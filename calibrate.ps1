@@ -141,7 +141,7 @@ try
     # Get content from web page
     $webContent = Invoke-WebRequest -Uri $webUrl -UseBasicParsing -Headers $headers
     # Look for relevant line with skew data
-    $webMatch = [regex]::Match($webContent.Content, $callsign + '\*? +[+-]\d\.\d+ +\d+ +([01]\.\d+)')
+    $webMatch = [regex]::Match($webContent.Content, $callsign + '\*? +[+-]\d\.\d+ +(\d+) +([01]\.\d+)')
     # Look for time stamp
     $webTimeMatch = [regex]::Match($webContent.Content, 'Last updated +(20\d{2}-\d{1,2}-\d{1,2} +\d{1,2}:\d{2}:\d{2})')
 
@@ -153,8 +153,8 @@ try
 
     if ($webTimeMatch.Success) 
     {
-        $lastUpdated = $webTimeMatch.Groups[1].Value
-        $webCalibration = [double]$webMatch.Groups[1].Value
+        $lastUpdated = $webTimeMatch.Groups[2].Value
+        $webCalibration = [double]$webMatch.Groups[2].Value
         Write-Host "Reading skew data from $webUrl published at $lastUpdated UTC"
         $webskew = ($webCalibration - 1.0) * 1000000.0
         $absSkew = [Math]::Abs($webskew).ToString("F2")
