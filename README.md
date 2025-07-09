@@ -10,6 +10,8 @@ of the web page with skew information has been updated.
 
 `dailycalibration.bat` is intended to run nightly using Windows Task Scheduler and also creates a log file. 
 
+When creating the task in Windows Task Scheduler, check the box "Synchronize across time zones" to make the time UTC.
+
 Depending on your PC's policy settings, you may need to run the commands in `setexecutionpolicy.txt` in a 
 PowerShell window as administrator to allow execution of the script files, 
 including `dailycalibration.bat` by Windows Task Scheduler.
