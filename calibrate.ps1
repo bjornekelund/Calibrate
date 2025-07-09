@@ -147,13 +147,21 @@ try
 
     if (-not $webMatch.Success) 
     {
-        Write-Host "Not enough spots reported for $callsign. Skimmer may be down. Exiting."
+        Write-Host "No spots reported for $callsign. Skimmer may be down. Exiting."
         exit 0
     }
 
+    $spotCount = [int]$webMatch.Groups[1].Value
+
+    if ($spotCount -lt 400) 
+    {
+        Write-Host "Only $spotCount spots reported for $callsign meaning skew estimate is too unreliable. Exiting."
+        exit 0
+    }
+    
     if ($webTimeMatch.Success) 
     {
-        $lastUpdated = $webTimeMatch.Groups[2].Value
+        $lastUpdated = $webTimeMatch.Groups[1].Value
         $webCalibration = [double]$webMatch.Groups[2].Value
         Write-Host "Reading skew data from $webUrl published at $lastUpdated UTC"
         $webskew = ($webCalibration - 1.0) * 1000000.0
