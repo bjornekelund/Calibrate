@@ -13,6 +13,9 @@ of the web page with skew information has been updated.
 When creating the task in Windows Task Scheduler, check the box "Synchronize across time zones" to make
 the time UTC if your computer is not already set to use UTC time.
 
+Another suggestion is to set "active hours" in Windows Update to include the hour between midnight
+and 1am UTC to avoid spontaneous restarts from interfering with the update.
+
 Depending on your PC's policy settings, you may need to run the commands in `setexecutionpolicy.txt` in a 
 PowerShell window as administrator to allow execution of the script files, 
 including `dailycalibration.bat` by Windows Task Scheduler.
