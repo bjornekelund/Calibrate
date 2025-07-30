@@ -8,7 +8,7 @@ param([switch]$DryRun, [switch]$Verbose)
 # Configuration for this specific installation
 # This is the only part of the script that should be edited
 
-$callsign = ""  # Callsign to look for in the web page, empty means automatically detected
+$callsign = ""  # Skimmer callsign. Empty means use the callsign of the first SkimSrv instance.
 
 $skimsrv1 = $true        # Set to $true if you have SkimSrv installed
 $skimsrv2 = $true        # Set to $true if you have two instances of SkimSrv installed
