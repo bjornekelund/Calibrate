@@ -8,7 +8,7 @@ param([switch]$DryRun, [switch]$Verbose)
 # Configuration for this specific installation
 # This is the only part of the script that should be edited
 
-$callsign = "SM7IUN"  # Callsign to look for in the web page
+$callsign = ""  # Callsign to look for in the web page, empty means automatically detected
 
 $skimsrv1 = $true        # Set to $true if you have SkimSrv installed
 $skimsrv2 = $true        # Set to $true if you have two instances of SkimSrv installed
@@ -95,6 +95,22 @@ try
 
     $iniMatch = [regex]::Match($iniContent, '\sfreqcalibration=(0\.\d+|1(\.\d+)?)', 
         [System.Text.RegularExpressions.RegexOptions]::IgnoreCase) 
+    
+    if ($callsign -eq "")
+    {
+        $iniCall = [regex]::Match($iniContent, '\scall=([A-Z0-9]+)', 
+        [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+
+        if ($iniCall.Success) {
+            $callsign = $iniCall.Groups[1].Value
+            Write-Host "Using callsign from ini file: $callsign"
+        }
+        else {
+            Write-Host "Failed to to find a valid Call= line in from $usedIniFile. Exiting."
+            exit 1
+        }
+    }
+
 
     if ($iniMatch.Success) 
     {
