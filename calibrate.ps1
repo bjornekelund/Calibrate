@@ -244,7 +244,7 @@ try
         }
         else 
         {
-            Write-Host "$iniFile1 not found."
+            Write-Host "$iniFile1 not found. Exiting."
             exit 1
         }
     }
@@ -268,7 +268,7 @@ try
         }
         else 
         {
-            Write-Host "$iniFile2 not found."
+            Write-Host "$iniFile2 not found. Exiting."
             exit 1
         }
     }
