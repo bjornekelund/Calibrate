@@ -183,12 +183,12 @@ try
         $webskew = ($webCalibration - 1.0) * 1000000.0
         $absSkew = [Math]::Abs($webskew).ToString("F2")
         $direction = if ($webskew -gt 0) { "high" } else { "low" }        
-        Write-Host "Suggested adjustment factor is $webCalibration meaning reports are on average $absSkew ppm too $direction"
+        Write-Host "Suggested adjustment factor is $webCalibration meaning reports are on average $($absSkew)ppm too $direction"
         # Since there are statistical variations adjustment factor, do not compensate fully but do a gradual adjustment
         $newCalibration = [Math]::Round([System.Math]::Pow($webCalibration, 0.5), 9)
         $skewadjustment = ((1.0 - $newCalibration) * 1000000.0).ToString("F2")
 
-        Write-Host "The moderated adjustment factor is $newCalibration corresponding to an adjustment of reports of $skewadjustment ppm"
+        Write-Host "The moderated adjustment factor is $newCalibration corresponding to an adjustment of reports of $($skewadjustment)ppm"
     }
     else 
     {
