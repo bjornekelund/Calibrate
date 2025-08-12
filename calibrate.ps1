@@ -16,6 +16,10 @@ $rttyskimserv1 = $false  # Set to $true if one instance of RttySkimServ is insta
 $rttyskimserv2 = $false  # Set to $true if you have two instances of RttySkimServ installed
 $cwsldigi = $true        # Set to $true if you are using CWSL_DIGI
 
+# Gain in control loop, 0.5 means a static error gets fully corrected in two days, 0.33 means three, etc.
+# The script implements an I-type controller in the ppm domain with a feedback gain of $loopgain
+$loopgain = 0.5
+
 # Location of ini files and CWSL_DIGI config file
 $iniPath1 = $env:APPDATA + "\Afreet\Products\SkimSrv\"
 $iniPath2 = $env:APPDATA + "\Afreet\Products\SkimSrv2\"
@@ -185,7 +189,7 @@ try
         $direction = if ($webskew -gt 0) { "high" } else { "low" }        
         Write-Host "Suggested adjustment factor is $webCalibration meaning reports are on average $($absSkew)ppm too $direction"
         # Since there are statistical variations adjustment factor, do not compensate fully but do a gradual adjustment
-        $newCalibration = [Math]::Round([System.Math]::Pow($webCalibration, 0.5), 9)
+        $newCalibration = [Math]::Round([System.Math]::Pow($webCalibration, $loopgain), 9)
         $skewadjustment = ((1.0 - $newCalibration) * 1000000.0).ToString("F2")
 
         Write-Host "The moderated adjustment factor is $newCalibration corresponding to an adjustment of reports of $($skewadjustment)ppm"
