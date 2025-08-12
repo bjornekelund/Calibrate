@@ -16,8 +16,8 @@ $rttyskimserv1 = $false  # Set to $true if one instance of RttySkimServ is insta
 $rttyskimserv2 = $false  # Set to $true if you have two instances of RttySkimServ installed
 $cwsldigi = $true        # Set to $true if you are using CWSL_DIGI
 
-# Gain in control loop, 0.5 means a static error gets fully corrected in two days, 0.33 means three, etc.
 # The script implements an I-type controller in the ppm domain with a feedback gain of $loopgain
+# 0.5 means a static error gets fully corrected in two runs (days), 0.33 means three, etc.
 $loopgain = 0.5
 
 # Location of ini files and CWSL_DIGI config file
