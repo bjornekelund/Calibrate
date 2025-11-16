@@ -173,7 +173,7 @@ try
 
     $spotCount = [int]$webMatch.Groups[1].Value
 
-    if ($spotCount -lt 400) 
+    if ($spotCount -lt 800) 
     {
         Write-Host "Only $spotCount spots reported for $callsign meaning skew estimate is too unreliable. Exiting."
         exit 0
