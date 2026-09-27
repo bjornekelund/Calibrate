@@ -48,6 +48,10 @@ $skimsrvExe3 = "RttySkimServ1.exe"
 $skimsrvExe4 = "RttySkimServ2.exe"
 $cwslExe = "CWSL_DIGI.exe"
 
+# Timing when restarting the applications after stopping them. 
+# This is to let the UDP stream stabilize before starting the next instance.
+$restartDelay = 5  # Delay in seconds
+
 # End of configuration section
 # -----------------------------------------------------------
 
@@ -114,7 +118,6 @@ try
             exit 1
         }
     }
-
 
     if ($iniMatch.Success) 
     {
@@ -207,22 +210,25 @@ try
     $cwsldigiCalibration = [Math]::Round(1.0 / ($newCalibration * $inicalibration), 9)
     if ($Verbose) { Write-Host "New calibration factor for CWSL_DIGI: $cwsldigiCalibration" }
     
-    # Stop the applications
-    if ($Verbose) { Write-Host "Stopping skimmer processes..." }
-
-    # Stop SkimSrv instances
-    Stop-Process -Name "SkimSrv*" -Force -ErrorAction SilentlyContinue 
+    if (-not $DryRun) 
+    {
+        # Stop the applications
+        if ($Verbose) { Write-Host "Stopping skimmer processes..." }
     
-    # Stop RttySkimServ instance if there is one
-    Stop-Process -Name "RttySkimServ*" -Force -ErrorAction SilentlyContinue
-
-    # Close CWSL_DIGI including subprocesses
-    Stop-Process -Name "CWSL*" -Force -ErrorAction SilentlyContinue
-    Stop-Process -Name "jt9*" -Force -ErrorAction SilentlyContinue
-
-    # Wait a moment for cleanup
-    if ($Verbose) { Write-Host "Wait for OS process clean up..." }
-    Start-Sleep -Seconds 4
+        # Stop SkimSrv instances
+        Stop-Process -Name "SkimSrv*" -Force -ErrorAction SilentlyContinue 
+        
+        # Stop RttySkimServ instance if there is one
+        Stop-Process -Name "RttySkimServ*" -Force -ErrorAction SilentlyContinue
+    
+        # Close CWSL_DIGI including subprocesses
+        Stop-Process -Name "CWSL*" -Force -ErrorAction SilentlyContinue
+        Stop-Process -Name "jt9*" -Force -ErrorAction SilentlyContinue
+    
+        # Wait a moment for cleanup
+        if ($Verbose) { Write-Host "Wait for OS process clean up..." }
+        Start-Sleep -Seconds 6
+    } 
 
     # Regular expression replacement pattern to update ini and config files
     # Case insensitive since CWSL_DIGI is
@@ -231,166 +237,167 @@ try
 
     if ($skimsrv1) 
     {
-        if (Test-Path $iniFilePath1) 
+        if ($DryRun)
         {
-            $newContent1 = (Get-Content $iniFilePath1 -Raw) -replace $replacementPattern, "`${1}$skimSrvCalibration"
-
-            if (-not $DryRun) 
-            {
-                # Replace calibration factor with new value
-                $newContent1 | Set-Content $iniFilePath1
-                Write-Host "Successfully updated $iniFile1 with new calibration factor: $skimSrvCalibration"
-            } 
-            else 
-            {
-                Write-Host "Did not update $iniFile1 with new calibration factor: $skimSrvCalibration"
-            }
+            Write-Host "Did not update $iniFile1 with new calibration factor: $skimSrvCalibration"
         }
         else 
         {
-            Write-Host "$iniFile1 not found. Exiting."
-            exit 1
+            if (Test-Path $iniFilePath1)
+            {
+                $newContent1 = (Get-Content $iniFilePath1 -Raw) -replace $replacementPattern, "`${1}$skimSrvCalibration"    
+                # Replace calibration factor with new value
+                $newContent1 | Set-Content $iniFilePath1
+                Write-Host "Successfully updated $iniFile1 with new calibration factor: $skimSrvCalibration"
+            }
+            else 
+            {
+                Write-Host "$iniFile1 not found. Exiting."
+                exit 1
+            }    
         }
     }
 
     if ($skimsrv2) 
     {
-        if (Test-Path $iniFilePath2)
+        if ($DryRun)
         {
-            $newContent2 = (Get-Content $iniFilePath2 -Raw) -replace $replacementPattern, "`${1}$skimSrvCalibration"
-
-            if (-not $DryRun) 
-            {
-                # Replace calibration factor with new value
-                $newContent2 | Set-Content $iniFilePath2
-                Write-Host "Successfully updated $iniFile2 with new calibration factor: $skimSrvCalibration"
-            } 
-            else 
-            {
-                Write-Host "Did not update $iniFile2 with new calibration factor: $skimSrvCalibration"
-            }
+            Write-Host "Did not update $iniFile2 with new calibration factor: $skimSrvCalibration"
         }
         else 
         {
-            Write-Host "$iniFile2 not found. Exiting."
-            exit 1
+            if (Test-Path $iniFilePath2)
+            {
+                $newContent2 = (Get-Content $iniFilePath2 -Raw) -replace $replacementPattern, "`${1}$skimSrvCalibration"
+                # Replace calibration factor with new value
+                $newContent2 | Set-Content $iniFilePath2
+                Write-Host "Successfully updated $iniFile2 with new calibration factor: $skimSrvCalibration"
+            }
+            else 
+            {
+                Write-Host "$iniFile2 not found. Exiting."
+                exit 1
+            }
         }
     }
 
     if ($rttyskimserv1)
     {
-        if (Test-Path $iniFilePath3)
+        if ($DryRun)
         {
-            $newContent3 = (Get-Content $iniFilePath3 -Raw) -replace $replacementPattern, "`${1}$skimSrvCalibration"
-
-            if (-not $DryRun) 
-            {
-                # Replace calibration factor with new factor
-                $newContent3 | Set-Content $iniFilePath3
-                Write-Host "Successfully updated $iniFile3 with new calibration factor: $skimSrvCalibration"
-            } 
-            else 
-            {
-                Write-Host "Did not update $iniFile3 with new calibration factor: $skimSrvCalibration"
-            }
+            Write-Host "Did not update $iniFile3 with new calibration factor: $skimSrvCalibration"
         }
         else 
         {
-            Write-Host "$iniFile3 not found. Exiting."
-            exit 1
+            if (Test-Path $iniFilePath3)
+            {
+                $newContent3 = (Get-Content $iniFilePath3 -Raw) -replace $replacementPattern, "`${1}$skimSrvCalibration"
+                # Replace calibration factor with new factor
+                $newContent3 | Set-Content $iniFilePath3
+                Write-Host "Successfully updated $iniFile3 with new calibration factor: $skimSrvCalibration"
+            }
+            else 
+            {
+                Write-Host "$iniFile3 not found. Exiting."
+                exit 1
+            }
         }
     }
 
     if ($rttyskimserv2)
     {
-        if (Test-Path $iniFilePath4)
+        if ($DryRun)
         {
-            $newContent4 = (Get-Content $iniFilePath4 -Raw) -replace $replacementPattern, "`${1}$skimSrvCalibration"
-
-            if (-not $DryRun) 
-            {
-                # Replace calibration factor with new value
-                $newContent4 | Set-Content $iniFilePath4
-                Write-Host "Successfully updated $iniFile4 with new calibration factor: $skimSrvCalibration"
-            } 
-            else 
-            {
-                Write-Host "Did not update $iniFile4 with new calibration factor: $skimSrvCalibration"
-            }
+            Write-Host "Did not update $iniFile4 with new calibration factor: $skimSrvCalibration"
         }
         else 
         {
-            Write-Host "$iniFile4 not found. Exiting."
-            exit 1
+            if (Test-Path $iniFilePath4)
+            {
+                $newContent4 = (Get-Content $iniFilePath4 -Raw) -replace $replacementPattern, "`${1}$skimSrvCalibration"
+                # Replace calibration factor with new value
+                $newContent4 | Set-Content $iniFilePath4
+                Write-Host "Successfully updated $iniFile4 with new calibration factor: $skimSrvCalibration"
+            }
+            else 
+            {
+                Write-Host "$iniFile4 not found. Exiting."
+                exit 1
+            }
         }
     }
 
     if ($cwsldigi) 
     {
-        if (Test-Path $configFilePath )
+        if ($DryRun)
         {
-            $newContent3 = (Get-Content $configFilePath -Raw) -replace $replacementPattern, "`${1}$cwsldigiCalibration"
-
-            if (-not $DryRun) 
-            {
-                # Replace calibration factor with new value
-                $newContent3 | Set-Content $configFilePath
-                Write-Host "Successfully updated $configFile with new calibration factor: $cwsldigiCalibration"
-            } 
-            else 
-            {
-                Write-Host "Did not update $configFile with new calibration factor: $cwsldigiCalibration"
-            }
+            Write-Host "Did not update $configFile with new calibration factor: $cwsldigiCalibration"
         }
         else 
         {
-            Write-Host "$configFile not found. Exiting."
-            exit 1
+            if (Test-Path $configFilePath )
+            {
+                $newContent3 = (Get-Content $configFilePath -Raw) -replace $replacementPattern, "`${1}$cwsldigiCalibration"    
+                # Replace calibration factor with new value
+                $newContent3 | Set-Content $configFilePath
+                Write-Host "Successfully updated $configFile with new calibration factor: $cwsldigiCalibration"
+            }
+            else 
+            {
+                Write-Host "$configFile not found. Exiting."
+                exit 1
+            }
         }
     }
-    
-    # Start applications again
-    if ($skimsrv1)
-    {
-        if ($Verbose) { Write-Host "Starting $skimsrvExe1..." }
-        Start-Process -WorkingDirectory $skimsrvPath1 -FilePath $skimsrvExe1 -WindowStyle Minimized
-    }
 
-    if ($skimsrv2)
+    if (-not $DryRun) 
     {
-        # Wait a moment to let UDP stream stabilize
-        Start-Sleep -Seconds 3
-        if ($Verbose) { Write-Host "Starting $skimsrvExe2..." }
-        Start-Process -WorkingDirectory $skimsrvPath2 -FilePath $skimsrvExe2 -WindowStyle Minimized
-    }
+        # Start applications again
+        if ($skimsrv1)
+        {
+            if ($Verbose) { Write-Host "Starting $skimsrvExe1..." }
+            Start-Process -WorkingDirectory $skimsrvPath1 -FilePath $skimsrvExe1 -WindowStyle Minimized
+        }
 
-    if ($rttyskimserv1)
-    {
-        # Wait a moment to let UDP stream stabilize
-        Start-Sleep -Seconds 3
-        if ($Verbose) { Write-Host "Starting $skimsrvExe3..." }
-        Start-Process -WorkingDirectory $skimsrvPath3 -FilePath $skimsrvExe3 -WindowStyle Minimized
-    }
+        if ($skimsrv2)
+        {
+            # Wait a moment to let UDP stream stabilize
+            Start-Sleep -Seconds $restartDelay
+            if ($Verbose) { Write-Host "Starting $skimsrvExe2..." }
+            Start-Process -WorkingDirectory $skimsrvPath2 -FilePath $skimsrvExe2 -WindowStyle Minimized
+        }
 
-    if ($rttyskimserv2)
-    {
-        # Wait a moment to let UDP stream stabilize
-        Start-Sleep -Seconds 3
-        if ($Verbose) { Write-Host "Starting $skimsrvExe4..." }
-        Start-Process -WorkingDirectory $skimsrvPath4 -FilePath $skimsrvExe4 -WindowStyle Minimized
-    }
+        if ($rttyskimserv1)
+        {
+            # Wait a moment to let UDP stream stabilize
+            Start-Sleep -Seconds $restartDelay
+            if ($Verbose) { Write-Host "Starting $skimsrvExe3..." }
+            Start-Process -WorkingDirectory $skimsrvPath3 -FilePath $skimsrvExe3 -WindowStyle Minimized
+        }
 
-    if ($cwsldigi)
-    {
-        if ($Verbose) { Write-Host "Starting CWSL_DIGI..." }
-        Start-Process -WorkingDirectory $cwslPath -FilePath $cwslExe -WindowStyle Minimized
-    }
+        if ($rttyskimserv2)
+        {
+            # Wait a moment to let UDP stream stabilize
+            Start-Sleep -Seconds $restartDelay
+            if ($Verbose) { Write-Host "Starting $skimsrvExe4..." }
+            Start-Process -WorkingDirectory $skimsrvPath4 -FilePath $skimsrvExe4 -WindowStyle Minimized
+        }
 
-    if ($Verbose) { Write-Host "Applications restarted." }
-    Write-Host "Update complete at $(Get-Date -Format "HH:mm:ss")"
+        if ($cwsldigi)
+        {
+            # Wait a moment to let UDP stream stabilize
+            Start-Sleep -Seconds $restartDelay
+            if ($Verbose) { Write-Host "Starting CWSL_DIGI..." }
+            Start-Process -WorkingDirectory $cwslPath -FilePath $cwslExe -WindowStyle Minimized
+        }
+
+        if ($Verbose) { Write-Host "Applications restarted." }
+        Write-Host "Update complete at $(Get-Date -Format "HH:mm:ss")"
+    }
 }
 catch 
 {
     Write-Error "An error occurred: $($_.Exception.Message)"
     exit 1
 }
+exit 0

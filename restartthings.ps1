@@ -1,7 +1,7 @@
 # PowerShell script to restart applications after restarting
 # SkimSrv, RTTY SkimSrv, and CWSL_DIGI.
 
-param([switch]$Verbose)
+param([switch]$DryRun, [switch]$Verbose)
 
 # -----------------------------------------------------------
 # Configuration for this specific installation
@@ -23,18 +23,27 @@ $clientName = "DXLog.net.DXC*"
 
 try 
 {
-
-    if ($clusterClient)
+    if ($DryRun) 
     {
-        if ($Verbose) { Write-Host "Stopping $clientExe..." }
-        Stop-Process -Name $clientName -Force -ErrorAction SilentlyContinue 
-        if ($Verbose) { Write-Host "Wait for OS process clean up..." }
-        Start-Sleep -Seconds 4
-        if ($Verbose) { Write-Host "Starting $clientExe..." }
-        Start-Process -WorkingDirectory $clientPath -FilePath $clientExe -WindowStyle Minimized
-        if ($Verbose) { Write-Host "$clientExe started." }
-        Write-Host "Application restart complete at $(Get-Date -Format "HH:mm:ss")"
-    }   
+        if ($Verbose) 
+        { 
+            Write-Host "Did not restart any applications." 
+        }        
+    }
+    else 
+    {
+        if ($clusterClient)
+        {
+            if ($Verbose) { Write-Host "Stopping $clientExe..." }
+            Stop-Process -Name $clientName -Force -ErrorAction SilentlyContinue 
+            if ($Verbose) { Write-Host "Wait for OS process clean up..." }
+            Start-Sleep -Seconds 4
+            if ($Verbose) { Write-Host "Starting $clientExe..." }
+            Start-Process -WorkingDirectory $clientPath -FilePath $clientExe -WindowStyle Minimized
+            if ($Verbose) { Write-Host "$clientExe started." }
+            Write-Host "Application restart complete at $(Get-Date -Format "HH:mm:ss")"
+        }   
+    }
 }
 catch 
 {
