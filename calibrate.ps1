@@ -10,11 +10,12 @@ param([switch]$DryRun, [switch]$Verbose)
 
 $callsign = ""  # Skimmer callsign. Empty means use the callsign of the first SkimSrv instance.
 
-$skimsrv1 = $true        # Set to $true if you have SkimSrv installed
-$skimsrv2 = $true        # Set to $true if you have two instances of SkimSrv installed
-$rttyskimserv1 = $false  # Set to $true if one instance of RttySkimServ is installed
-$rttyskimserv2 = $false  # Set to $true if you have two instances of RttySkimServ installed
-$cwsldigi = $true        # Set to $true if you are using CWSL_DIGI
+$skimSrv1 = $true        # Set to $true if you have SkimSrv installed
+$skimSrv2 = $true        # Set to $true if you have two instances of SkimSrv installed
+$rttySkimServ1 = $false  # Set to $true if one instance of RttySkimServ is installed
+$rttySkimServ2 = $false  # Set to $true if you have two instances of RttySkimServ installed
+$cwslDigi = $true        # Set to $true if you are using CWSL_DIGI
+$useAggregator = $false  # Set to $true if you are using Aggregator to start skimmers and CWSL_DIGI
 
 # The script implements an I-type controller in the ppm domain with a feedback gain of $loopgain
 # 0.5 means a static error gets fully corrected in two runs (days), 0.33 means three, etc.
@@ -34,7 +35,7 @@ $iniFile3 = "RttySkimServ1.ini"
 $iniFile4 = "RttySkimServ2.ini"
 $configFile = "config.ini"
 
-# Installation paths for SkimSrv, RttySkimSrv, and CWSL_DIGI
+# Installation paths for SkimSrv, RttySkimSrv, CWSL_DIGI, and Aggregator
 $skimsrvPath1 = "C:\Program Files (x86)\Afreet\SkimSrv\"
 $skimsrvPath2 = "C:\Program Files (x86)\Afreet\SkimSrv2\"
 $skimsrvPath3 = "C:\Program Files (x86)\Afreet\RttySkimServ1\"
@@ -47,6 +48,10 @@ $skimsrvExe2 = "SkimSrv2.exe"
 $skimsrvExe3 = "RttySkimServ1.exe"
 $skimsrvExe4 = "RttySkimServ2.exe"
 $cwslExe = "CWSL_DIGI.exe"
+
+# Aggregator
+$aggregatorPath = "C:\Aggregator\"
+$aggregatorExe = "Aggregator v6.7.exe"
 
 # Timing when restarting the applications after stopping them. 
 # This is to let the UDP stream stabilize before starting the next instance.
@@ -83,13 +88,13 @@ try
     # Format of line 
     # FreqCalibration=1.00828283
     # FreqCalibration=1
-    if ($skimsrv1 -and (Test-Path $iniFilePath1)) 
+    if ($skimSrv1 -and (Test-Path $iniFilePath1)) 
     {
         if ($Verbose) { Write-Host "Reading SkimSrv ini file: $iniFilePath1" }
         $iniContent = Get-Content $iniFilePath1 -Raw
         $usedIniFile = $iniFile1
     } 
-    elseif ($rttyskimserv1 -and (Test-Path $iniFilePath3)) 
+    elseif ($rttySkimServ1 -and (Test-Path $iniFilePath3)) 
     {
         if ($Verbose) { Write-Host "Reading RttySkimServ ini file: $iniFilePath3" }
         $iniContent = Get-Content $iniFilePath3 -Raw
@@ -133,7 +138,7 @@ try
     # Parse CWSL_DIGI config file for current calibration factor
     # Format of line 
     # freqcalibration=1.00828283
-    if ($cwsldigi -and (Test-Path $configFilePath)) 
+    if ($cwslDigi -and (Test-Path $configFilePath)) 
     {
         $configContent = Get-Content $configFilePath -Raw
         $configMatch = [regex]::Match($configContent, '\sfreqcalibration=(0\.\d+|1(\.\d+)?)', 
@@ -207,8 +212,8 @@ try
     # Round to 9 decimal places like in the web page which is an overkill of accuracy
     $skimSrvCalibration = [Math]::Round($newCalibration * $inicalibration, 9)
     if ($Verbose) { Write-Host "New calibration factor for SkimSrv: $skimSrvCalibration" }
-    $cwsldigiCalibration = [Math]::Round(1.0 / ($newCalibration * $inicalibration), 9)
-    if ($Verbose) { Write-Host "New calibration factor for CWSL_DIGI: $cwsldigiCalibration" }
+    $cwslDigiCalibration = [Math]::Round(1.0 / ($newCalibration * $inicalibration), 9)
+    if ($Verbose) { Write-Host "New calibration factor for CWSL_DIGI: $cwslDigiCalibration" }
     
     if (-not $DryRun) 
     {
@@ -224,6 +229,11 @@ try
         # Close CWSL_DIGI including subprocesses
         Stop-Process -Name "CWSL*" -Force -ErrorAction SilentlyContinue
         Stop-Process -Name "jt9*" -Force -ErrorAction SilentlyContinue
+
+        if ($useAggregator)
+        {
+            Stop-Process -Name "Aggregator*" -Force -ErrorAction SilentlyContinue 
+        }
     
         # Wait a moment for cleanup
         if ($Verbose) { Write-Host "Wait for OS process clean up..." }
@@ -235,7 +245,7 @@ try
     $replacementPattern = [regex]::new("(freqcalibration=)(1(\.\d+)?|0\.\d+)", 
         [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
 
-    if ($skimsrv1) 
+    if ($skimSrv1) 
     {
         if ($DryRun)
         {
@@ -258,7 +268,7 @@ try
         }
     }
 
-    if ($skimsrv2) 
+    if ($skimSrv2) 
     {
         if ($DryRun)
         {
@@ -281,7 +291,7 @@ try
         }
     }
 
-    if ($rttyskimserv1)
+    if ($rttySkimServ1)
     {
         if ($DryRun)
         {
@@ -304,7 +314,7 @@ try
         }
     }
 
-    if ($rttyskimserv2)
+    if ($rttySkimServ2)
     {
         if ($DryRun)
         {
@@ -327,20 +337,20 @@ try
         }
     }
 
-    if ($cwsldigi) 
+    if ($cwslDigi) 
     {
         if ($DryRun)
         {
-            Write-Host "Did not update $configFile with new calibration factor: $cwsldigiCalibration"
+            Write-Host "Did not update $configFile with new calibration factor: $cwslDigiCalibration"
         }
         else 
         {
             if (Test-Path $configFilePath )
             {
-                $newContent3 = (Get-Content $configFilePath -Raw) -replace $replacementPattern, "`${1}$cwsldigiCalibration"    
+                $newContent3 = (Get-Content $configFilePath -Raw) -replace $replacementPattern, "`${1}$cwslDigiCalibration"    
                 # Replace calibration factor with new value
                 $newContent3 | Set-Content $configFilePath
-                Write-Host "Successfully updated $configFile with new calibration factor: $cwsldigiCalibration"
+                Write-Host "Successfully updated $configFile with new calibration factor: $cwslDigiCalibration"
             }
             else 
             {
@@ -352,46 +362,55 @@ try
 
     if (-not $DryRun) 
     {
-        # Start applications again
-        if ($skimsrv1)
+        if ($useAggregator)
         {
-            if ($Verbose) { Write-Host "Starting $skimsrvExe1..." }
-            Start-Process -WorkingDirectory $skimsrvPath1 -FilePath $skimsrvExe1 -WindowStyle Minimized
+            if ($Verbose) { Write-Host "Aggregator restarted." }
+            Start-Process -WorkingDirectory $aggregatorPath -FilePath $aggregatorExe -WindowStyle Minimized
+        }
+        else
+        {
+            # Start applications again
+            if ($skimSrv1)
+            {
+                if ($Verbose) { Write-Host "Starting $skimsrvExe1..." }
+                Start-Process -WorkingDirectory $skimsrvPath1 -FilePath $skimsrvExe1 -WindowStyle Minimized
+            }
+    
+            if ($skimSrv2)
+            {
+                # Wait a moment to let UDP stream stabilize
+                Start-Sleep -Seconds $restartDelay
+                if ($Verbose) { Write-Host "Starting $skimsrvExe2..." }
+                Start-Process -WorkingDirectory $skimsrvPath2 -FilePath $skimsrvExe2 -WindowStyle Minimized
+            }
+    
+            if ($rttySkimServ1)
+            {
+                # Wait a moment to let UDP stream stabilize
+                Start-Sleep -Seconds $restartDelay
+                if ($Verbose) { Write-Host "Starting $skimsrvExe3..." }
+                Start-Process -WorkingDirectory $skimsrvPath3 -FilePath $skimsrvExe3 -WindowStyle Minimized
+            }
+    
+            if ($rttySkimServ2)
+            {
+                # Wait a moment to let UDP stream stabilize
+                Start-Sleep -Seconds $restartDelay
+                if ($Verbose) { Write-Host "Starting $skimsrvExe4..." }
+                Start-Process -WorkingDirectory $skimsrvPath4 -FilePath $skimsrvExe4 -WindowStyle Minimized
+            }
+    
+            if ($cwslDigi)
+            {
+                # Wait a moment to let UDP stream stabilize
+                Start-Sleep -Seconds $restartDelay
+                if ($Verbose) { Write-Host "Starting CWSL_DIGI..." }
+                Start-Process -WorkingDirectory $cwslPath -FilePath $cwslExe -WindowStyle Minimized
+            }
+  
+            if ($Verbose) { Write-Host "Applications restarted." }
         }
 
-        if ($skimsrv2)
-        {
-            # Wait a moment to let UDP stream stabilize
-            Start-Sleep -Seconds $restartDelay
-            if ($Verbose) { Write-Host "Starting $skimsrvExe2..." }
-            Start-Process -WorkingDirectory $skimsrvPath2 -FilePath $skimsrvExe2 -WindowStyle Minimized
-        }
-
-        if ($rttyskimserv1)
-        {
-            # Wait a moment to let UDP stream stabilize
-            Start-Sleep -Seconds $restartDelay
-            if ($Verbose) { Write-Host "Starting $skimsrvExe3..." }
-            Start-Process -WorkingDirectory $skimsrvPath3 -FilePath $skimsrvExe3 -WindowStyle Minimized
-        }
-
-        if ($rttyskimserv2)
-        {
-            # Wait a moment to let UDP stream stabilize
-            Start-Sleep -Seconds $restartDelay
-            if ($Verbose) { Write-Host "Starting $skimsrvExe4..." }
-            Start-Process -WorkingDirectory $skimsrvPath4 -FilePath $skimsrvExe4 -WindowStyle Minimized
-        }
-
-        if ($cwsldigi)
-        {
-            # Wait a moment to let UDP stream stabilize
-            Start-Sleep -Seconds $restartDelay
-            if ($Verbose) { Write-Host "Starting CWSL_DIGI..." }
-            Start-Process -WorkingDirectory $cwslPath -FilePath $cwslExe -WindowStyle Minimized
-        }
-
-        if ($Verbose) { Write-Host "Applications restarted." }
         Write-Host "Update complete at $(Get-Date -Format "HH:mm:ss")"
     }
 }
