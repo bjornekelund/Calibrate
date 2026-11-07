@@ -1,8 +1,8 @@
 # Calibrate
 A PowerShell script kit to run nightly to calibrate [RBN](https://www.reversebeacon.net/main.php) skimmers.
 
-Calibrates up to two instances of CW Skimmer Server and RTTY Skimmer Server each plus one instance of 
-CWSL_DIGI based on skew data published nightly on [sm7iun.se](https://sm7iun.se/rbn/analytics/)
+Calibrates up to two instances of CW Skimmer Server and RTTY Skimmer Server each
+plus one instance of CWSL_DIGI based on skew data published nightly on [sm7iun.se](https://sm7iun.se/rbn/analytics/)
 
 Since the calibration adjustment is incremental and proportional, the script should be run no 
 more than once per day and preferrably around 00:20 UTC, shortly after the content 
@@ -21,3 +21,6 @@ PowerShell window as administrator to allow execution of the script files, inclu
 by Windows Task Scheduler.
 
 `testrun.bat` and `testrunv.bat` (verbose) are test scripts that runs without updating any files. 
+
+`backup.ps1` and `restore.ps1` back up and restore calibration factors which can be useful while 
+experimenting and setting things up.
