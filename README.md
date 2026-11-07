@@ -4,7 +4,7 @@ A PowerShell script kit to run nightly to calibrate [RBN](https://www.reversebea
 Calibrates up to two instances of CW Skimmer Server and RTTY Skimmer Server each plus one instance of 
 CWSL_DIGI based on skew data published nightly on [sm7iun.se](https://sm7iun.se/rbn/analytics/)
 
-Since the calibration adjustment is proportional, the script should be run no 
+Since the calibration adjustment is incremental and proportional, the script should be run no 
 more than once per day and preferrably around 00:20 UTC, shortly after the content 
 of the web page with skew information has been updated.
 
@@ -17,7 +17,7 @@ Another suggestion is to set "active hours" in Windows Update to include the hou
 and 1am UTC to avoid spontaneous restarts from interfering with the update.
 
 Depending on your PC's policy settings, you may need to run the commands in `setexecutionpolicy.txt` in a 
-PowerShell window as administrator to allow execution of the script files, 
-including `dailycalibration.bat` by Windows Task Scheduler.
+PowerShell window as administrator to allow execution of the script files, including `dailycalibration.bat`,
+by Windows Task Scheduler.
 
 `testrun.bat` and `testrunv.bat` (verbose) are test scripts that runs without updating any files. 
